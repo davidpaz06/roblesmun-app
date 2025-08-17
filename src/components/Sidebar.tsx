@@ -10,14 +10,14 @@ const Sidebar: FC = () => {
   const toggle = useCallback(() => setIsOpen((o) => !o), []);
 
   return (
-    <aside className="sm:hidden fixed inset-0">
+    <aside className="sm:hidden w-[100%] flex items-center justify-end p-4">
       <button
         onClick={toggle}
         type="button"
         aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
-        className="pointer-events-auto fixed top-3 right-3 z-50 p-2 rounded cursor-pointer transition-colors"
+        className="pointer-events-auto z-50 p-2 rounded cursor-pointer transition-colors"
       >
-        <CiMenuBurger size={48} />
+        <CiMenuBurger size={40} />
       </button>
 
       <div
@@ -89,6 +89,15 @@ const Sidebar: FC = () => {
                 to="/comites"
               >
                 Comités
+              </Link>
+            </li>
+            <li>
+              <Link
+                onClick={close}
+                className="block py-2 font-montserrat-light"
+                to="/login"
+              >
+                Iniciar sesión
               </Link>
             </li>
           </ul>
