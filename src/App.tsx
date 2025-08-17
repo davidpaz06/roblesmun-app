@@ -14,7 +14,7 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen min-w-full flex justify-start items-center flex-col">
+    <div className="min-h-[100vh] min-w-[100vw] flex justify-start items-center flex-col">
       <Sidebar />
       {!isMobile && <Header />}
       <main>
