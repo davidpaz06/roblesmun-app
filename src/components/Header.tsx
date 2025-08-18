@@ -4,15 +4,15 @@ import { Link } from "react-router-dom";
 
 const Header: FC = () => {
   return (
-    <header className="text-white font-montserrat-light w-[95%] max-w-[768px] mt-16 mb-8">
+    <header className="text-white font-montserrat-light w-[90%] max-w-[800px] min-w-[580px] m-8 fixed z-10">
       <Link to="/login">
-        <span className="p-2 absolute top-4 right-4 flex items-center gap-2 text-sm">
+        <span className="p-2 absolute top-[-8px] right-0 z-10 flex items-center gap-2 text-xs">
           <p>INICIAR SESIÓN</p>
-          <CiLogin size={18} />
+          <CiLogin size={16} />
         </span>
       </Link>
       <nav>
-        <ul className="bg-[#ab0d13] w-full h-12 flex items-center justify-around rounded-lg">
+        <ul className="bg-transparent/60 mt-10 w-full h-12 flex items-center justify-around rounded-lg bg-glass">
           <li className="h-full">
             <Link className="h-full flex items-center px-1" to="/">
               <img
@@ -25,7 +25,7 @@ const Header: FC = () => {
           <li className="h-full">
             <Link
               className="h-full flex items-center px-3  md:px-6"
-              to="/prensa"
+              to="/press"
             >
               PRENSA
             </Link>
@@ -33,7 +33,7 @@ const Header: FC = () => {
           <li className="h-full">
             <Link
               className="h-full flex items-center px-3  md:px-6"
-              to="/patrocinadores"
+              to="/sponsors"
             >
               PATROCINADORES
             </Link>
@@ -41,7 +41,7 @@ const Header: FC = () => {
           <li className="h-full">
             <Link
               className="h-full flex items-center px-3 md:px-6"
-              to="/inscripciones"
+              to="/registrations"
             >
               INSCRIPCIONES
             </Link>
@@ -49,7 +49,7 @@ const Header: FC = () => {
           <li className="h-full">
             <Link
               className="h-full flex items-center px-3  md:px-6"
-              to="/comites"
+              to="/committees"
             >
               COMITÉS
             </Link>

@@ -10,7 +10,7 @@ const Sidebar: FC = () => {
   const toggle = useCallback(() => setIsOpen((o) => !o), []);
 
   return (
-    <aside className="sm:hidden w-[100%] flex items-center justify-end p-4">
+    <aside className="sm:hidden w-[100%] flex items-center justify-end p-4 fixed z-10">
       <button
         onClick={toggle}
         type="button"
@@ -59,7 +59,7 @@ const Sidebar: FC = () => {
               <Link
                 onClick={close}
                 className="block py-2 font-montserrat-light cursor-pointer"
-                to="/prensa"
+                to="/press"
               >
                 Prensa
               </Link>
@@ -68,7 +68,7 @@ const Sidebar: FC = () => {
               <Link
                 onClick={close}
                 className="block py-2 font-montserrat-light"
-                to="/patrocinadores"
+                to="/sponsors"
               >
                 Patrocinadores
               </Link>
@@ -77,7 +77,7 @@ const Sidebar: FC = () => {
               <Link
                 onClick={close}
                 className="block py-2 font-montserrat-light"
-                to="/inscripciones"
+                to="/registrations"
               >
                 Inscripciones
               </Link>
@@ -86,7 +86,7 @@ const Sidebar: FC = () => {
               <Link
                 onClick={close}
                 className="block py-2 font-montserrat-light"
-                to="/comites"
+                to="/committees"
               >
                 Comités
               </Link>
