@@ -8,6 +8,13 @@
 }
 
 @font-face {
+  font-family: "Montserrat-LightItalic";
+  src: url("./assets/fonts/Montserrat/Montserrat-LightItalic.ttf");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
   font-family: "Montserrat-Bold";
   src: url("./assets/fonts/Montserrat/Montserrat-Bold.ttf");
   font-weight: normal;
@@ -16,6 +23,10 @@
 
 .font-montserrat-light {
   font-family: "Montserrat-Light", sans-serif;
+}
+
+.montserrat-italic {
+  font-family: "Montserrat-LightItalic", sans-serif;
 }
 
 .font-montserrat-bold {
@@ -39,15 +50,40 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
   background: linear-gradient(180deg, #242424 0%, #101010 100%);
 }
 
 h1 {
-  font-size: 2.5em;
-  line-height: 1.1;
+  line-height: 0.5;
   font-family: "Montserrat-Bold";
+}
+
+p {
+  font-size: 1.15em;
+}
+
+.bg-delegation {
+  background-image: url("./assets/img/delegation.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.bg-glass {
+  background: rgba(0, 0, 0, 0.09);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
