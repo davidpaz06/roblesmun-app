@@ -9,6 +9,15 @@ const Sidebar: FC = () => {
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((o) => !o), []);
 
+  const sidebarTabs = [
+    { name: "Inicio", path: "/" },
+    { name: "Prensa", path: "/press" },
+    { name: "Patrocinadores", path: "/sponsors" },
+    { name: "Inscripciones", path: "/registrations" },
+    { name: "Comités", path: "/committees" },
+    { name: "Iniciar sesión", path: "/login" },
+  ];
+
   return (
     <aside className="sm:hidden w-[100%] flex items-center justify-end p-4 fixed z-10">
       <button
@@ -46,60 +55,17 @@ const Sidebar: FC = () => {
         </div>
         <nav className="px-6 py-6">
           <ul className="flex flex-col gap-1 text-white">
-            <li>
-              <Link
-                onClick={close}
-                className="block py-2 font-montserrat-light"
-                to="/"
-              >
-                Inicio
-              </Link>
-            </li>
-            <li>
-              <Link
-                onClick={close}
-                className="block py-2 font-montserrat-light cursor-pointer"
-                to="/press"
-              >
-                Prensa
-              </Link>
-            </li>
-            <li>
-              <Link
-                onClick={close}
-                className="block py-2 font-montserrat-light"
-                to="/sponsors"
-              >
-                Patrocinadores
-              </Link>
-            </li>
-            <li>
-              <Link
-                onClick={close}
-                className="block py-2 font-montserrat-light"
-                to="/registrations"
-              >
-                Inscripciones
-              </Link>
-            </li>
-            <li>
-              <Link
-                onClick={close}
-                className="block py-2 font-montserrat-light"
-                to="/committees"
-              >
-                Comités
-              </Link>
-            </li>
-            <li>
-              <Link
-                onClick={close}
-                className="block py-2 font-montserrat-light"
-                to="/login"
-              >
-                Iniciar sesión
-              </Link>
-            </li>
+            {sidebarTabs.map((tab) => (
+              <li key={tab.name}>
+                <Link
+                  onClick={close}
+                  className="block py-2 font-montserrat-light"
+                  to={tab.path}
+                >
+                  {tab.name}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
       </div>

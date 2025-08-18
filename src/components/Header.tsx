@@ -3,6 +3,13 @@ import { CiLogin } from "react-icons/ci";
 import { Link } from "react-router-dom";
 
 const Header: FC = () => {
+  const headerTabs = [
+    { name: "PRENSA", path: "/press" },
+    { name: "PATROCINADORES", path: "/sponsors" },
+    { name: "INSCRIPCIONES", path: "/registrations" },
+    { name: "COMITÉS", path: "/committees" },
+  ];
+
   return (
     <header className="text-white font-montserrat-light w-[90%] max-w-[800px] min-w-[580px] m-8 fixed z-10">
       <Link to="/login">
@@ -22,38 +29,17 @@ const Header: FC = () => {
               />
             </Link>
           </li>
-          <li className="h-full">
-            <Link
-              className="h-full flex items-center px-3  md:px-6"
-              to="/press"
-            >
-              PRENSA
-            </Link>
-          </li>
-          <li className="h-full">
-            <Link
-              className="h-full flex items-center px-3  md:px-6"
-              to="/sponsors"
-            >
-              PATROCINADORES
-            </Link>
-          </li>
-          <li className="h-full">
-            <Link
-              className="h-full flex items-center px-3 md:px-6"
-              to="/registrations"
-            >
-              INSCRIPCIONES
-            </Link>
-          </li>
-          <li className="h-full">
-            <Link
-              className="h-full flex items-center px-3  md:px-6"
-              to="/committees"
-            >
-              COMITÉS
-            </Link>
-          </li>
+
+          {headerTabs.map((tab) => (
+            <li className="h-full" key={tab.name}>
+              <Link
+                className="h-full flex items-center px-3  md:px-6"
+                to={tab.path}
+              >
+                {tab.name}
+              </Link>
+            </li>
+          ))}
         </ul>
       </nav>
     </header>
