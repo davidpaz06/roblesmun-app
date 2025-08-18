@@ -19,7 +19,7 @@ const Header: FC = () => {
         </span>
       </Link>
       <nav>
-        <ul className="bg-transparent/60 mt-10 w-full h-12 flex items-center justify-around rounded-lg bg-glass">
+        <ul className="mt-10 w-full h-12 flex items-center justify-around bg-glass">
           <li className="h-full">
             <Link className="h-full flex items-center px-1" to="/">
               <img
