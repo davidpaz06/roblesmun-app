@@ -27,11 +27,6 @@ function App() {
         </Routes>
       </main>
 
-      {/* <footer className="bg-[#ab0d13] w-full h-12 flex items-center justify-center">
-        <p className="text-white font-montserrat-light">
-          © 2026 Roblesmun. Todos los derechos reservados.
-        </p>
-      </footer> */}
       <Footer />
     </div>
   );
