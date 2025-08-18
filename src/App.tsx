@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-import Home from "./views/Home";
 import Header from "./components/Header";
+import Home from "./views/Home";
+import Footer from "./components/Footer";
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
@@ -14,14 +15,24 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-[100vh] min-w-[100vw] flex justify-start items-center flex-col">
+    <div className="flex flex-col justify-start items-center">
       <Sidebar />
       {!isMobile && <Header />}
-      <main>
+
+      <main className="w-full flex flex-col justify-center items-center box-border">
         <Routes>
           <Route path="/" element={<Home />} />
+          {/* <Route path="/press" element={<PressSection />} />
+          <Route path="/sponsors" element={<SponsorsSection />} /> */}
         </Routes>
       </main>
+
+      {/* <footer className="bg-[#ab0d13] w-full h-12 flex items-center justify-center">
+        <p className="text-white font-montserrat-light">
+          © 2026 Roblesmun. Todos los derechos reservados.
+        </p>
+      </footer> */}
+      <Footer />
     </div>
   );
 }
