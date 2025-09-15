@@ -62,7 +62,7 @@ const Home: FC = () => {
         </div>
       </section>
 
-      <section className=" w-[90%] flex flex-col justify-start">
+      <section className=" w-[90%] my-4 flex flex-col justify-start">
         <h2 className="text-[4em] font-montserrat-bold transition-all duration-500 ease-in-out">
           DIRECTIVA
         </h2>
@@ -72,14 +72,14 @@ const Home: FC = () => {
           de ROBLESMUN.
         </p>
 
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-16">
           {board.map((person, idx) => (
             <div className="flex flex-col font-montserrat-light" key={idx}>
               <div className="rounded-xl flex flex-col items-center">
                 <img
                   src={person.img}
                   alt={person.name}
-                  className="h-[320px] w-auto object-cover rounded-xl shadow-lg"
+                  className="h-[320px] w-auto object-cover rounded-xl shadow-lg mb-8"
                 />
               </div>
               <h2 className="text-xl text-center underline underline-offset-6">
