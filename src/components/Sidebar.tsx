@@ -29,12 +29,13 @@ const Sidebar: FC = () => {
         <CiMenuBurger size={40} />
       </button>
 
-      <div
-        onClick={close}
-        aria-hidden="true"
-        className={`fixed inset-0 z-40 transition-opacity duration-500 ease-in-out
-          ${isOpen ? "opacity-100 bg-black/50 backdrop-blur-sm" : "opacity-0"}`}
-      />
+      {isOpen && (
+        <div
+          onClick={close}
+          aria-hidden="true"
+          className="fixed inset-0 z-40 opacity-100 bg-black/50 backdrop-blur-sm transition-opacity duration-500 ease-in-out"
+        />
+      )}
 
       <div
         className={`fixed top-0 right-0 z-50 w-72 h-screen bg-[#ab0d13] shadow-md transition-transform duration-300 ease-in-out

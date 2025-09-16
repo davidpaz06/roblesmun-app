@@ -1,6 +1,8 @@
 import type { FC } from "react";
+import { useEffect, useState } from "react";
 import { CiLogin } from "react-icons/ci";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const Header: FC = () => {
   const headerTabs = [
@@ -10,8 +12,31 @@ const Header: FC = () => {
     { name: "COMITÉS", path: "/committees" },
   ];
 
+  const [direction, setDirection] = useState<"up" | "down">("up");
+
+  useEffect(() => {
+    let prevScrollY = window.scrollY;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > prevScrollY) {
+        setDirection("down");
+      } else {
+        setDirection("up");
+      }
+      prevScrollY = currentScrollY;
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="text-white font-montserrat-light w-[90%] max-w-[800px] min-w-[580px] m-8 fixed z-10">
+    <motion.header
+      className="text-white font-montserrat-light w-[90%] max-w-[800px] min-w-[580px] m-4 fixed z-10"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: direction === "down" ? -90 : 0 }}
+      onHoverStart={() => setDirection("up")}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <Link to="/login">
         <span className="p-2 absolute top-[-8px] right-0 z-10 flex items-center gap-2 text-xs">
           <p>INICIAR SESIÓN</p>
@@ -42,7 +67,7 @@ const Header: FC = () => {
           ))}
         </ul>
       </nav>
-    </header>
+    </motion.header>
   );
 };
 

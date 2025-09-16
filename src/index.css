@@ -56,7 +56,6 @@ body {
 }
 
 h1 {
-  line-height: 0.5;
   font-family: "Montserrat-Bold";
 }
 
@@ -66,6 +65,13 @@ p {
 
 .bg-delegation {
   background-image: url("./assets/img/delegation.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.bg-home {
+  background-image: url("./assets/img/home.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

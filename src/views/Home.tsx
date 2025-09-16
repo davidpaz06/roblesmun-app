@@ -31,12 +31,12 @@ const Home: FC = () => {
 
   return (
     <>
-      <section className="text-[#f0f0f0] w-full min-h-[100vh] bg-delegation">
+      <section className="text-[#f0f0f0] w-full min-h-[100vh] bg-home">
         <div className="bg-black/55 w-full h-[100vh] flex flex-col justify-center items-center">
           <h2 className="sm:text-[12em] text-[8em] font-montserrat-bold transition-all duration-500 ease-in-out">
             XVII
           </h2>
-          <h1 className="sm:text-[4em] text-[3em] font-montserrat-light transition-all duration-500 ease-in-out">
+          <h1 className="sm:text-[4em] text-[3em] leading-[0.1] font-montserrat-light transition-all duration-500 ease-in-out">
             ROBLESMUN
           </h1>
         </div>
