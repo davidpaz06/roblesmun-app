@@ -83,7 +83,7 @@ const CommitteesView: FC = () => {
 
   return (
     <>
-      <section className="text-[#f0f0f0] w-[90%] min-h-[80vh] pt-40 flex justify-center">
+      <section className="text-[#f0f0f0] w-[90%] min-h-[80vh] sm:pt-40 flex justify-center">
         <div className="w-full max-w-[1200px] px-4">
           <h2 className="text-[4em] my-4 font-montserrat-bold transition-all duration-500 ease-in-out">
             COMITÉS

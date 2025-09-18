@@ -24,7 +24,7 @@ const Sidebar: FC = () => {
         onClick={toggle}
         type="button"
         aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
-        className="pointer-events-auto z-50 p-2 rounded cursor-pointer transition-colors"
+        className="pointer-events-auto z-50 p-4 rounded cursor-pointer transition-colors"
       >
         <CiMenuBurger size={40} />
       </button>
