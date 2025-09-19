@@ -36,7 +36,7 @@ const Home: FC = () => {
           <h2 className="sm:text-[12em] text-[8em] font-montserrat-bold transition-all duration-500 ease-in-out">
             XVII
           </h2>
-          <h1 className="sm:text-[4em] text-[3em] leading-[0.1] font-montserrat-light transition-all duration-500 ease-in-out">
+          <h1 className="sm:text-[3.5em] text-[3em] leading-[0.1] font-montserrat-light transition-all duration-500 ease-in-out">
             ROBLESMUN
           </h1>
         </div>
@@ -63,7 +63,7 @@ const Home: FC = () => {
       </section>
 
       <section className=" w-[90%] my-4 flex flex-col justify-start">
-        <h2 className="text-[4em] font-montserrat-bold transition-all duration-500 ease-in-out">
+        <h2 className="text-[3.5em] font-montserrat-bold transition-all duration-500 ease-in-out">
           DIRECTIVA
         </h2>
 

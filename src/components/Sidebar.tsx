@@ -38,7 +38,7 @@ const Sidebar: FC = () => {
       )}
 
       <div
-        className={`fixed top-0 right-0 z-50 w-72 h-screen bg-[#ab0d13] shadow-md transition-transform duration-300 ease-in-out
+        className={`fixed top-0 right-0 z-50 w-72 h-screen bg-[#d53137] shadow-md transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "translate-x-full"}`}
         role="dialog"
         aria-modal="true"
@@ -55,12 +55,12 @@ const Sidebar: FC = () => {
           </button>
         </div>
         <nav className="px-6 py-6">
-          <ul className="flex flex-col gap-1 text-white">
+          <ul className="flex flex-col gap-1 text-white text-2xl">
             {sidebarTabs.map((tab) => (
               <li key={tab.name}>
                 <Link
                   onClick={close}
-                  className="block py-2 font-montserrat-light"
+                  className="block py-4 font-montserrat-light text-white hover:text-gray-300"
                   to={tab.path}
                 >
                   {tab.name}

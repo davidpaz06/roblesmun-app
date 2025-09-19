@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 
 const Footer: FC = () => {
   return (
-    <footer className="border-t-1 border-[#282828] w-full h-48 mt-8 flex flex-col items-center justify-center">
+    <footer className="border-t-1 border-[#282828] w-full h-48 mt-0 flex flex-col items-center justify-center">
       <div className="w-[480px] flex flex-row justify-between">
         <Link
           to="https://www.instagram.com/roblesmun"

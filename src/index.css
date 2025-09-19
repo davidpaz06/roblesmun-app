@@ -77,6 +77,13 @@ p {
   background-repeat: no-repeat;
 }
 
+.bg-login {
+  background-image: url("./assets/img/login.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .bg-glass {
   background: rgba(0, 0, 0, 0.09);
   border-radius: 0.75rem;
