@@ -1,15 +1,21 @@
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import { CiLogin } from "react-icons/ci";
+import { CiUser } from "react-icons/ci";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { PiTicketThin } from "react-icons/pi";
+import { useAuth } from "../context/AuthContext";
+import { useSlots } from "../hooks/useSlots";
 
 const Header: FC = () => {
+  const { user, logout } = useAuth();
+  const { slots } = useSlots();
   const headerTabs = [
     { name: "PRENSA", path: "/press" },
     { name: "PATROCINADORES", path: "/sponsors" },
-    { name: "INSCRIPCIONES", path: "/registrations" },
     { name: "COMITÉS", path: "/committees" },
+    { name: "INSCRIPCIONES", path: "/registrations" },
   ];
 
   const [direction, setDirection] = useState<"up" | "down">("up");
@@ -33,18 +39,33 @@ const Header: FC = () => {
     <motion.header
       className="text-white font-montserrat-light w-[90%] max-w-[800px] min-w-[580px] m-4 fixed z-10"
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: direction === "down" ? -90 : 0 }}
+      animate={{ opacity: 1, y: direction === "down" ? -100 : 0 }}
       onHoverStart={() => setDirection("up")}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <Link to="/login">
-        <span className="p-2 absolute top-[-8px] right-0 z-10 flex items-center gap-2 text-xs">
-          <p>INICIAR SESIÓN</p>
-          <CiLogin size={16} />
+      {user ? (
+        <span className="p-2 absolute top-[-4px] right-0 z-10 flex items-center gap-2 text-xs">
+          <CiUser size={24} />
+          <p>{user.email}</p>
+        </span>
+      ) : (
+        <Link to="/login">
+          <span className="p-2 absolute top-[-4px] right-0 z-10 flex items-center gap-2 text-xs">
+            <CiLogin size={24} />
+            <p>INICIAR SESIÓN</p>
+          </span>
+        </Link>
+      )}
+
+      <Link to="/tickets">
+        <span className="p-2 absolute top-[-4px] left-0 z-10 flex items-center gap-2 text-xs">
+          <PiTicketThin size={24} />
+          <p>CUPOS: {slots}</p>
         </span>
       </Link>
+
       <nav>
-        <ul className="mt-10 w-full h-12 flex items-center justify-around bg-glass">
+        <ul className="mt-12 w-full h-12 flex items-center justify-around bg-glass">
           <li className="h-full">
             <Link className="h-full flex items-center px-1" to="/">
               <img

@@ -45,13 +45,6 @@ const CommitteeModal: FC<{
           </p>
         </div>
 
-        <Link
-          className="inline-block my-4 px-6 py-3 w-full text-center bg-glass font-montserrat-bold rounded transition-colors duration-200 hover:bg-opacity-80"
-          to="/registrations"
-        >
-          Inscribirse
-        </Link>
-
         {committee.description && (
           <div className="w-full">
             <h3 className="text-lg font-montserrat-bold mb-2">Descripción</h3>
@@ -62,7 +55,6 @@ const CommitteeModal: FC<{
         )}
       </div>
 
-      {/* Segunda columna - Video y enlaces */}
       <div className="text-[#f0f0f0] w-full md:w-1/2 flex flex-col p-4 md:p-8 md:overflow-y-auto">
         <video
           className="w-full rounded-lg shadow-lg cursor-pointer mb-6"
@@ -72,6 +64,13 @@ const CommitteeModal: FC<{
 
         <div className="space-y-6">
           <div>
+            <Link
+              className="inline-block my-4 px-6 py-3 w-full text-center bg-glass font-montserrat-bold rounded transition-colors duration-200 hover:bg-opacity-80"
+              to="/registrations"
+            >
+              Inscribirse
+            </Link>
+
             <h3 className="text-lg font-montserrat-bold mb-3">
               Guía de estudio
             </h3>

@@ -1,13 +1,16 @@
 import { useState, type FC, useCallback } from "react";
 import { CiMenuBurger } from "react-icons/ci";
+import { CiLogout } from "react-icons/ci";
 import { Link } from "react-router-dom";
 import XButton from "./XButton";
+import { useAuth } from "../context/AuthContext";
 
 const Sidebar: FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const close = useCallback(() => setIsOpen(false), []);
-  const toggle = useCallback(() => setIsOpen((o) => !o), []);
+  const close = useCallback(() => setIsOpen(false), []),
+    toggle = useCallback(() => setIsOpen((o) => !o), []);
 
   const sidebarTabs = [
     { name: "Inicio", path: "/" },
@@ -55,19 +58,35 @@ const Sidebar: FC = () => {
           </button>
         </div>
         <nav className="px-6 py-6">
-          <ul className="flex flex-col gap-1 text-white text-2xl">
-            {sidebarTabs.map((tab) => (
-              <li key={tab.name}>
-                <Link
-                  onClick={close}
-                  className="block py-4 font-montserrat-light text-white hover:text-gray-300"
-                  to={tab.path}
-                >
-                  {tab.name}
-                </Link>
-              </li>
-            ))}
+          <ul className="flex flex-col gap-1 text-[#f0f0f0] text-2xl">
+            {sidebarTabs
+              .filter((tab) => tab.path !== "/login" || !user)
+              .map((tab) => (
+                <li key={tab.name}>
+                  <Link
+                    onClick={close}
+                    className="block py-4 font-montserrat-light text-[#f0f0f0] hover:text-gray-300"
+                    to={tab.path}
+                  >
+                    {tab.name}
+                  </Link>
+                </li>
+              ))}
           </ul>
+
+          <div className="mt-4">
+            {user && <CiLogout size={32} className="absolute bottom-24" />}
+            {user && (
+              <span className="absolute bottom-20 left-4 text-[#f0f0f0] text-sm">
+                <p
+                  className="absolute bottom-20 block py-4 font-montserrat-light text-[#f0f0f0] hover:text-gray-300 cursor-pointer"
+                  onClick={logout}
+                >
+                  Cerrar sesión
+                </p>
+              </span>
+            )}
+          </div>
         </nav>
       </div>
     </aside>

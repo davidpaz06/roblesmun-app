@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { SlotsProvider } from "./providers/SlotsProvider";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import Home from "./views/Home";
@@ -25,23 +26,25 @@ function App() {
 
   return (
     <AuthProvider>
-      <div className="flex flex-col justify-start items-center">
-        {!hideNavigation && <Sidebar />}
-        {!isMobile && !hideNavigation && <Header />}
+      <SlotsProvider>
+        <div className="flex flex-col justify-start items-center">
+          {!hideNavigation && <Sidebar />}
+          {!isMobile && !hideNavigation && <Header />}
 
-        <main className="w-full flex flex-col justify-center items-center box-border">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/press" element={<PressView />} />
-            <Route path="/sponsors" element={<SponsorsView />} />
-            <Route path="/registrations" element={<RegistrationsView />} />
-            <Route path="/committees" element={<CommitteesView />} />
-            <Route path="/login" element={<Login />} />
-          </Routes>
-        </main>
+          <main className="w-full flex flex-col justify-center items-center box-border">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/press" element={<PressView />} />
+              <Route path="/sponsors" element={<SponsorsView />} />
+              <Route path="/registrations" element={<RegistrationsView />} />
+              <Route path="/committees" element={<CommitteesView />} />
+              <Route path="/login" element={<Login />} />
+            </Routes>
+          </main>
 
-        <Footer />
-      </div>
+          <Footer />
+        </div>
+      </SlotsProvider>
     </AuthProvider>
   );
 }

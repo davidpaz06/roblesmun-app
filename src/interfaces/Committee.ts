@@ -4,6 +4,7 @@ export interface Committee {
   img: string;
   color: string;
   seats: number;
+  seatsList: string[];
   description?: string;
   studyGuide?: string;
   legalFramework?: string[];
