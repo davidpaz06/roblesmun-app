@@ -67,7 +67,16 @@ const Caroussel: FC<CarousselProps> = ({
             />
           </label>
           <p className="mt-2 text-sm text-gray-300">
-            (Máximo 30 cupos por inscripción)
+            Inscripción por:
+            {formData.seats > 0 && (
+              <span className="block mt-1 font-montserrat-bold">
+                {formData.independentDelegate
+                  ? "Delegado independiente"
+                  : formData.isBigGroup
+                  ? "Delegación grande"
+                  : "Delegación pequeña"}
+              </span>
+            )}
           </p>
         </div>
       ),
@@ -91,7 +100,7 @@ const Caroussel: FC<CarousselProps> = ({
                   {committee.name}
                 </h4>
 
-                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                <div className="grid grid-cols-2 space-y-2 max-h-[800px] overflow-y-auto">
                   {committee.seatsList.map((seat, index) => (
                     <label
                       key={`${committee.name}-${seat}-${index}`}
@@ -211,22 +220,6 @@ const Caroussel: FC<CarousselProps> = ({
                 </div>
 
                 <div>
-                  <p className="font-montserrat-bold">
-                    Asientos seleccionados:
-                  </p>
-                  <p className="text-gray-300">
-                    {formData.seatsRequested.length} asientos
-                  </p>
-                </div>
-
-                <div>
-                  <p className="font-montserrat-bold">Método de pago:</p>
-                  <p className="text-gray-300">
-                    {formData.paymentMethod || "No seleccionado"}
-                  </p>
-                </div>
-
-                <div>
                   <p className="font-montserrat-bold mb-2">
                     Lista de asientos:
                   </p>
@@ -247,14 +240,61 @@ const Caroussel: FC<CarousselProps> = ({
                   </div>
                 </div>
 
+                <div>
+                  <p className="font-montserrat-bold">Método de pago:</p>
+                  <p className="text-gray-300">
+                    {formData.paymentMethod || "No seleccionado"}
+                  </p>
+                </div>
+
                 <div className="mt-4 pt-3 border-t border-[#282828]">
-                  <div className="flex justify-between font-montserrat-bold">
-                    <span>Total a pagar:</span>
-                    <span className="text-green-400">
-                      ${(formData.seatsRequested.length * 10).toFixed(2)}
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>
+                        Cupos ({formData.seatsRequested.length} × $10.00):
+                      </span>
+                      <span>
+                        ${(formData.seatsRequested.length * 10).toFixed(2)}
+                      </span>
+                    </div>
+
+                    {!formData.independentDelegate && (
+                      <div className="flex justify-between text-sm">
+                        <span>
+                          Tarifa de delegación (
+                          {formData.isBigGroup ? "grande" : "pequeña"}):
+                        </span>
+                        <span>${formData.isBigGroup ? "30.00" : "20.00"}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between font-montserrat-bold text-base pt-2 border-t border-gray-600">
+                      <span>Total a pagar:</span>
+                      <span className="text-green-400">
+                        $
+                        {(() => {
+                          const cuposCost = formData.seatsRequested.length * 10;
+                          const delegationFee = formData.independentDelegate
+                            ? 0
+                            : formData.isBigGroup
+                            ? 30
+                            : 20;
+                          return (cuposCost + delegationFee).toFixed(2);
+                        })()}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">$10.00 por cupo</p>
+
+                  <div className="mt-2 text-xs text-gray-400">
+                    <p>$10.00 por cupo</p>
+                    {!formData.independentDelegate && (
+                      <p>
+                        Tarifa de delegación{" "}
+                        {formData.isBigGroup ? "grande" : "pequeña"}: $
+                        {formData.isBigGroup ? "30.00" : "20.00"}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
