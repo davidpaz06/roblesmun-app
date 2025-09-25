@@ -6,13 +6,15 @@ import type { RegistrationForm } from "../interfaces/RegistrationForm";
 const RegistrationsView: FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RegistrationForm>({
-    faculty: "",
     institution: "",
     isBigGroup: false,
     independentDelegate: false,
     seats: 0,
     seatsRequested: [],
+    requiresBackup: false,
+    backupSeatsRequested: [],
     paymentMethod: "",
+    amount: 0,
     transactionId: "",
   });
 
@@ -30,9 +32,6 @@ const RegistrationsView: FC = () => {
     "Zelle",
     "Efectivo",
   ];
-
-  // Para debugging - ver los datos del formulario en tiempo real
-  console.log("Form data:", formData);
 
   return (
     <>

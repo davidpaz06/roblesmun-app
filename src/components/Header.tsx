@@ -4,13 +4,10 @@ import { CiLogin } from "react-icons/ci";
 import { CiUser } from "react-icons/ci";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { PiTicketThin } from "react-icons/pi";
 import { useAuth } from "../context/AuthContext";
-import { useSlots } from "../hooks/useSlots";
 
 const Header: FC = () => {
   const { user, logout } = useAuth();
-  const { slots } = useSlots();
   const headerTabs = [
     { name: "PRENSA", path: "/press" },
     { name: "PATROCINADORES", path: "/sponsors" },
@@ -56,13 +53,6 @@ const Header: FC = () => {
           </span>
         </Link>
       )}
-
-      <Link to="/tickets">
-        <span className="p-2 absolute top-[-4px] left-0 z-10 flex items-center gap-2 text-xs">
-          <PiTicketThin size={24} />
-          <p>CUPOS: {slots}</p>
-        </span>
-      </Link>
 
       <nav>
         <ul className="mt-12 w-full h-12 flex items-center justify-around bg-glass">

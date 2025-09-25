@@ -1,8 +1,69 @@
-import type { FC } from "react";
+import { type FC, useState } from "react";
+import { z } from "zod";
 import { committees } from "../config/committees";
-import { paymentInformation, additionalMessages } from "../config/paymentInfo";
+import { paymentInformation } from "../config/paymentInfo";
 import type { RegistrationForm } from "../interfaces/RegistrationForm";
 import { FaCheck } from "react-icons/fa6";
+import Loader from "./Loader";
+
+const step1Schema = z.object({
+  seats: z
+    .number()
+    .min(1, "Debe seleccionar al menos 1 cupo")
+    .max(30, "No puede seleccionar más de 30 cupos"),
+});
+
+const step2Schema = z
+  .object({
+    seats: z.number().min(1),
+    seatsRequested: z
+      .array(z.string())
+      .min(1, "Debe seleccionar al menos un asiento"),
+    requiresBackup: z.boolean(),
+    backupSeatsRequested: z.array(z.string()),
+  })
+  .superRefine((data, ctx) => {
+    if (data.seatsRequested.length > data.seats) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["seatsRequested"],
+        message:
+          "No puede seleccionar más asientos principales de los cupos solicitados",
+      });
+    }
+
+    if (data.requiresBackup) {
+      const maxBackupSeats = data.seats * 2;
+      if (data.backupSeatsRequested.length > maxBackupSeats) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["backupSeatsRequested"],
+          message: `No puede seleccionar más de ${maxBackupSeats} cupos de respaldo (máximo 2 por cupo solicitado)`,
+        });
+      }
+    }
+  });
+
+const step3Schema = z.object({
+  paymentMethod: z.string().min(1, "Debe seleccionar un método de pago"),
+});
+
+const step4Schema = z.object({
+  transactionId: z
+    .string()
+    .min(1, "El número de referencia es requerido")
+    .min(4, "El número de referencia debe tener al menos 4 caracteres"),
+  paymentMethod: z.string().min(1),
+});
+
+const finalSchema = z.object({
+  seats: z.number().min(1, "Debe seleccionar al menos 1 cupo"),
+  seatsRequested: z
+    .array(z.string())
+    .min(1, "Debe seleccionar al menos un asiento"),
+  paymentMethod: z.string().min(1, "Debe seleccionar un método de pago"),
+  transactionId: z.string().min(1, "El número de referencia es requerido"),
+});
 
 interface CarousselProps {
   slides: number;
@@ -21,6 +82,68 @@ const Caroussel: FC<CarousselProps> = ({
   setFormData,
   setCurrentStep,
 }) => {
+  const [errors, setErrors] = useState<Record<string, string>>({}),
+    [isSubmitting, setIsSubmitting] = useState<boolean>(false),
+    [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const validateCurrentStep = (): boolean => {
+    try {
+      let schema;
+
+      switch (currentStep) {
+        case 1:
+          schema = step1Schema;
+          break;
+        case 2:
+          schema = step2Schema;
+          break;
+        case 3:
+          schema = step3Schema;
+          break;
+        case 4:
+          schema = step4Schema;
+          break;
+        default:
+          return true;
+      }
+
+      schema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const formattedErrors: Record<string, string> = {};
+        error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            formattedErrors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setErrors(formattedErrors);
+      }
+      return false;
+    }
+  };
+
+  // Función para validar el formulario completo
+  const validateFullForm = (): boolean => {
+    try {
+      finalSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const formattedErrors: Record<string, string> = {};
+        error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            formattedErrors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setErrors(formattedErrors);
+      }
+      return false;
+    }
+  };
+
   const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seatsValue = parseInt(e.target.value) || 0;
 
@@ -30,15 +153,39 @@ const Caroussel: FC<CarousselProps> = ({
       independentDelegate: seatsValue === 1,
       isBigGroup: seatsValue >= 13,
     }));
+
+    if (errors.seats) {
+      setErrors((prev) => ({
+        ...prev,
+        seats: "",
+      }));
+    }
   };
 
-  const handleSeatSelection = (seat: string, isChecked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      seatsRequested: isChecked
-        ? [...prev.seatsRequested, seat]
-        : prev.seatsRequested.filter((s) => s !== seat),
-    }));
+  const handleSeatSelection = (
+    committee: string,
+    seatName: string,
+    isChecked: boolean
+  ) => {
+    const uniqueSeat = `${committee} - ${seatName}`;
+
+    setFormData((prev) => {
+      const newSeatsRequested = isChecked
+        ? [...prev.seatsRequested, uniqueSeat]
+        : prev.seatsRequested.filter((s) => s !== uniqueSeat);
+
+      return {
+        ...prev,
+        seatsRequested: newSeatsRequested,
+      };
+    });
+
+    if (errors.seatsRequested) {
+      setErrors((prev) => ({
+        ...prev,
+        seatsRequested: "",
+      }));
+    }
   };
 
   const handlePaymentMethod = (method: string) => {
@@ -46,6 +193,64 @@ const Caroussel: FC<CarousselProps> = ({
       ...prev,
       paymentMethod: method,
     }));
+
+    if (errors.paymentMethod) {
+      setErrors((prev) => ({
+        ...prev,
+        paymentMethod: "",
+      }));
+    }
+  };
+
+  const handleTransactionIdChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      transactionId: value,
+    }));
+
+    if (errors.transactionId) {
+      setErrors((prev) => ({
+        ...prev,
+        transactionId: "",
+      }));
+    }
+  };
+
+  const handleBackupToggle = (enabled: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      requiresBackup: enabled,
+      backupSeatsRequested: enabled ? prev.backupSeatsRequested : [],
+    }));
+  };
+
+  const handleBackupSeatSelection = (
+    committee: string,
+    seatName: string,
+    isChecked: boolean
+  ) => {
+    const uniqueSeat = `${committee} - ${seatName}`;
+
+    setFormData((prev) => {
+      const newBackupSeatsRequested = isChecked
+        ? [...prev.backupSeatsRequested, uniqueSeat]
+        : prev.backupSeatsRequested.filter((s) => s !== uniqueSeat);
+
+      return {
+        ...prev,
+        backupSeatsRequested: newBackupSeatsRequested,
+      };
+    });
+
+    if (errors.backupSeatsRequested) {
+      setErrors((prev) => ({
+        ...prev,
+        backupSeatsRequested: "",
+      }));
+    }
   };
 
   const slideContent = [
@@ -54,9 +259,18 @@ const Caroussel: FC<CarousselProps> = ({
       content: (
         <div className="text-center">
           <h3 className="text-xl mb-4">¿Cuántos cupos deseas reservar?</h3>
+
+          {errors.seats && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4">
+              {errors.seats}
+            </div>
+          )}
+
           <label aria-label="cupos" htmlFor="cupos">
             <input
-              className="bg-glass p-4 text-4xl font-montserrat-bold text-center rounded-lg"
+              className={`bg-glass p-4 text-4xl font-montserrat-bold text-center rounded-lg ${
+                errors.seats ? "border border-red-500" : ""
+              }`}
               type="number"
               id="cupos"
               min="1"
@@ -85,9 +299,50 @@ const Caroussel: FC<CarousselProps> = ({
       title: "Seleccionar cupos",
       content: (
         <div className="w-full">
-          <h3 className="text-xl mb-6 text-center">
-            Solicita los cupos deseados
+          <h3 className="text-center py-4">
+            Cupos seleccionados: {formData.seatsRequested.length} /{" "}
+            {formData.seats}
+            {formData.requiresBackup && (
+              <span className="block text-sm text-gray-400">
+                Respaldo: {formData.backupSeatsRequested.length} /{" "}
+                {formData.seats * 2}
+              </span>
+            )}
           </h3>
+
+          <label className="cursor-pointer text-sm font-montserrat-light flex items-center justify-center mb-4 gap-2 p-2">
+            <input
+              type="checkbox"
+              checked={formData.requiresBackup}
+              onChange={(e) => handleBackupToggle(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-glass border-gray-600 rounded focus:ring-blue-500"
+            />
+
+            <p>Cupos de respaldo</p>
+          </label>
+
+          {formData.requiresBackup && (
+            <div className="text-center mb-4 px-4 py-2 bg-glass">
+              <p>
+                Los cupos de respaldo se usarán si tus primeras opciones no
+                están disponibles. Puedes seleccionar hasta {formData.seats * 2}{" "}
+                cupos de respaldo.
+              </p>
+            </div>
+          )}
+
+          {errors.seatsRequested && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4 text-center">
+              {errors.seatsRequested}
+            </div>
+          )}
+
+          {errors.backupSeatsRequested && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4 text-center">
+              {errors.backupSeatsRequested}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[400px] overflow-y-auto">
             {committees.map((committee) => (
               <div key={committee.name} className="bg-glass/50 p-4 rounded-lg">
@@ -96,35 +351,125 @@ const Caroussel: FC<CarousselProps> = ({
                   alt={committee.name}
                   className="w-full h-32 object-contain mb-3"
                 />
-                <h4 className="text-sm font-montserrat-bold mb-3 text-center min-h-[40px] flex items-center justify-center">
+                <h4 className="font-montserrat-bold mb-3 text-center min-h-[40px] flex items-center justify-center">
                   {committee.name}
                 </h4>
 
-                <div className="grid grid-cols-2 space-y-2 max-h-[800px] overflow-y-auto">
-                  {committee.seatsList.map((seat, index) => (
-                    <label
-                      key={`${committee.name}-${seat}-${index}`}
-                      className="flex items-center gap-2 text-xs cursor-pointer hover:bg-black/20 p-1 rounded transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        name={`${committee.name}-seats`}
-                        value={seat}
-                        checked={formData.seatsRequested.includes(seat)}
-                        onChange={(e) =>
-                          handleSeatSelection(seat, e.target.checked)
-                        }
-                        className="w-3 h-3 text-blue-600 bg-transparent border border-gray-400 rounded focus:ring-blue-500 focus:ring-1"
-                      />
-                      <span className="font-montserrat-light">{seat}</span>
-                    </label>
-                  ))}
-                </div>
-
                 <div className="mt-3 text-center">
                   <span className="text-xs text-gray-300">
-                    Cupos disponibles: {committee.seats}
+                    Cupos disponibles:
+                    {
+                      committee.seatsList.filter(
+                        (seat) =>
+                          seat.available &&
+                          !formData.seatsRequested.includes(
+                            `${committee.name} - ${seat.name}`
+                          ) &&
+                          !formData.backupSeatsRequested.includes(
+                            `${committee.name} - ${seat.name}`
+                          )
+                      ).length
+                    }
                   </span>
+                </div>
+
+                <div className="grid grid-cols-2 space-y-2 max-h-[800px] overflow-y-auto">
+                  {committee.seatsList.map((seat, index) => {
+                    const uniqueSeat = `${committee.name} - ${seat.name}`;
+                    const isSelected =
+                      formData.seatsRequested.includes(uniqueSeat);
+                    const isBackupSelected =
+                      formData.backupSeatsRequested.includes(uniqueSeat);
+
+                    return (
+                      <div
+                        key={`${committee.name}-${seat.name}-${index}`}
+                        className="space-y-1"
+                      >
+                        <label
+                          className={`flex items-center gap-2 py-1 text-sm cursor-pointer hover:bg-black/20 p-1 rounded transition-colors ${
+                            !seat.available || isBackupSelected
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            name={`${committee.name}-seats`}
+                            value={uniqueSeat}
+                            checked={isSelected}
+                            disabled={!seat.available || isBackupSelected}
+                            onChange={(e) =>
+                              handleSeatSelection(
+                                committee.name,
+                                seat.name,
+                                e.target.checked
+                              )
+                            }
+                            className="w-3 h-3 text-blue-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-gray-400 focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          />
+                          <span
+                            className={`font-montserrat-light transition-all duration-200 ${
+                              !seat.available
+                                ? "text-gray-600 line-through"
+                                : isSelected
+                                ? "text-green-400 font-montserrat-bold"
+                                : "text-[#f0f0f0]"
+                            }`}
+                          >
+                            {seat.name}
+                            {!seat.available && (
+                              <span className="ml-1 text-xs text-red-400">
+                                (No disponible)
+                              </span>
+                            )}
+                          </span>
+                        </label>
+
+                        {formData.requiresBackup && (
+                          <label
+                            className={`flex items-center gap-2 py-1 text-xs cursor-pointer hover:bg-black/20 p-1 rounded transition-colors ml-4 ${
+                              (!seat.available || isSelected) &&
+                              !isBackupSelected
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              name={`${committee.name}-backup-seats`}
+                              value={uniqueSeat}
+                              checked={isBackupSelected}
+                              disabled={
+                                ((!seat.available || isSelected) &&
+                                  !isBackupSelected) ||
+                                (formData.backupSeatsRequested.length >=
+                                  formData.seats * 2 &&
+                                  !isBackupSelected)
+                              }
+                              onChange={(e) =>
+                                handleBackupSeatSelection(
+                                  committee.name,
+                                  seat.name,
+                                  e.target.checked
+                                )
+                              }
+                              className="w-3 h-3 text-orange-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-orange-400 focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                            <span
+                              className={`font-montserrat-light transition-all duration-200 ${
+                                isBackupSelected
+                                  ? "text-orange-400 font-montserrat-bold"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              {seat.name} (respaldo)
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -132,7 +477,6 @@ const Caroussel: FC<CarousselProps> = ({
         </div>
       ),
     },
-
     {
       title: "Método de pago",
       content: (
@@ -140,6 +484,13 @@ const Caroussel: FC<CarousselProps> = ({
           <h3 className="text-xl font-montserrat-light mb-4">
             ¿Cómo deseas pagar?
           </h3>
+
+          {errors.paymentMethod && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4">
+              {errors.paymentMethod}
+            </div>
+          )}
+
           <div className="space-y-4 flex flex-col items-center gap-4">
             {paymentMethods?.map((method) => (
               <button
@@ -149,7 +500,7 @@ const Caroussel: FC<CarousselProps> = ({
                   formData.paymentMethod === method
                     ? "bg-[#f0f0f0] text-[#242424] font-montserrat-bold"
                     : "bg-glass"
-                }`}
+                } ${errors.paymentMethod ? "border border-red-500" : ""}`}
               >
                 {formData.paymentMethod === method && (
                   <FaCheck className="absolute left-[5%] top-1/2 transform -translate-y-1/2 text-[#242424]" />
@@ -165,49 +516,14 @@ const Caroussel: FC<CarousselProps> = ({
       title: "Validar pago",
       content: (
         <div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <div className="bg-glass p-6 rounded-lg">
-              <h4 className="font-montserrat-bold mb-4 text-lg">
-                Información de pago
-              </h4>
-
-              {formData.paymentMethod ? (
-                (() => {
-                  const paymentInfo = paymentInformation.find(
-                    (info) => info.method === formData.paymentMethod
-                  );
-
-                  if (!paymentInfo) return null;
-
-                  return (
-                    <div className="space-y-3 text-sm">
-                      {Object.entries(paymentInfo.data).map(([key, value]) => (
-                        <div key={key}>
-                          <p className="font-montserrat-bold">{key}:</p>
-                          <p className="text-gray-300">{value}</p>
-                        </div>
-                      ))}
-
-                      <div
-                        className={`mt-4 p-3 bg-${paymentInfo.messageColor}-500/20 rounded-lg`}
-                      >
-                        <p
-                          className={`text-xs text-${paymentInfo.messageColor}-200`}
-                        >
-                          {paymentInfo.message}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className="text-center text-gray-400">
-                  <p>Selecciona un método de pago para ver los detalles</p>
-                </div>
-              )}
+          {/* Mostrar errores si existen */}
+          {errors.transactionId && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4">
+              {errors.transactionId}
             </div>
+          )}
 
-            {/* Columna derecha - Datos del usuario/resumen */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mx-auto">
             <div className="bg-glass/30 p-6 rounded-lg">
               <h4 className="font-montserrat-bold mb-4 text-lg">
                 Resumen de inscripción
@@ -221,30 +537,68 @@ const Caroussel: FC<CarousselProps> = ({
 
                 <div>
                   <p className="font-montserrat-bold mb-2">
-                    Lista de asientos:
+                    Cupos principales:
                   </p>
-                  <div className="max-h-32 overflow-y-auto bg-black/20 p-2 rounded">
+                  <div className="max-h-32 overflow-y-auto bg-glass p-2 rounded">
                     {formData.seatsRequested.length > 0 ? (
                       <ul className="text-xs space-y-1">
                         {formData.seatsRequested.map((seat, index) => (
-                          <li key={index} className="text-gray-300">
+                          <li key={index} className="text-green-300 py-1">
                             • {seat}
                           </li>
                         ))}
                       </ul>
                     ) : (
                       <p className="text-xs text-gray-400">
-                        No hay asientos seleccionados
+                        No hay cupos principales seleccionados
                       </p>
                     )}
                   </div>
                 </div>
+
+                {formData.requiresBackup &&
+                  formData.backupSeatsRequested.length > 0 && (
+                    <div>
+                      <p className="font-montserrat-bold mb-2">
+                        Cupos de respaldo:
+                      </p>
+                      <div className="max-h-32 overflow-y-auto bg-glass p-2 rounded">
+                        <ul className="text-xs space-y-1">
+                          {formData.backupSeatsRequested.map((seat, index) => (
+                            <li key={index} className="text-orange-300 py-1">
+                              • {seat}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
 
                 <div>
                   <p className="font-montserrat-bold">Método de pago:</p>
                   <p className="text-gray-300">
                     {formData.paymentMethod || "No seleccionado"}
                   </p>
+                </div>
+
+                <div className="flex justify-between font-montserrat-bold text-base pt-2 border-t border-[#282828]">
+                  <span>Total a pagar:</span>
+                  <span className="text-green-400">
+                    $
+                    {(() => {
+                      const cuposCost = formData.seatsRequested.length * 10;
+                      const delegationFee = formData.independentDelegate
+                        ? 0
+                        : formData.isBigGroup
+                        ? 30
+                        : 20;
+
+                      formData.amount = Number(
+                        (cuposCost + delegationFee).toFixed(2)
+                      );
+                      return formData.amount;
+                    })()}
+                  </span>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-[#282828]">
@@ -267,52 +621,105 @@ const Caroussel: FC<CarousselProps> = ({
                         <span>${formData.isBigGroup ? "30.00" : "20.00"}</span>
                       </div>
                     )}
-
-                    <div className="flex justify-between font-montserrat-bold text-base pt-2 border-t border-gray-600">
-                      <span>Total a pagar:</span>
-                      <span className="text-green-400">
-                        $
-                        {(() => {
-                          const cuposCost = formData.seatsRequested.length * 10;
-                          const delegationFee = formData.independentDelegate
-                            ? 0
-                            : formData.isBigGroup
-                            ? 30
-                            : 20;
-                          return (cuposCost + delegationFee).toFixed(2);
-                        })()}
-                      </span>
-                    </div>
                   </div>
 
-                  <div className="mt-2 text-xs text-gray-400">
-                    <p>$10.00 por cupo</p>
-                    {!formData.independentDelegate && (
-                      <p>
-                        Tarifa de delegación{" "}
-                        {formData.isBigGroup ? "grande" : "pequeña"}: $
-                        {formData.isBigGroup ? "30.00" : "20.00"}
-                      </p>
-                    )}
+                  <div className="mt-4">
+                    <label
+                      htmlFor="transactionId"
+                      className="font-montserrat-bold block mb-2"
+                    >
+                      Número de referencia / confirmación:
+                    </label>
+                    <input
+                      id="transactionId"
+                      type="text"
+                      value={formData.transactionId}
+                      onChange={handleTransactionIdChange}
+                      placeholder={
+                        paymentInformation.find(
+                          (info) => info.method === formData.paymentMethod
+                        )?.placeholder || "Ej: 1234567890"
+                      }
+                      className={`w-full px-3 py-2 rounded bg-glass border text-[#f0f0f0] font-montserrat-light focus:outline-none focus:ring-2 ${
+                        errors.transactionId
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-gray-600 focus:ring-blue-500"
+                      }`}
+                    />
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {formData.paymentMethod && (
-            <div className="mt-6 text-center">
-              <div className="bg-glass/20 p-4 rounded-lg max-w-2xl mx-auto">
-                <p className="text-sm font-montserrat-light">
-                  {
-                    additionalMessages[
-                      formData.paymentMethod as keyof typeof additionalMessages
-                    ]
-                  }
-                </p>
-              </div>
+            <div className="bg-glass p-6 rounded-lg h-fit">
+              <h4 className="font-montserrat-bold mb-4 text-lg">
+                Información de pago
+              </h4>
+
+              {formData.paymentMethod ? (
+                (() => {
+                  const paymentInfo = paymentInformation.find(
+                    (info) => info.method === formData.paymentMethod
+                  );
+
+                  if (!paymentInfo) return null;
+
+                  return (
+                    <div className="space-y-3 text-sm flex flex-col items-start">
+                      {Object.entries(paymentInfo.data).map(([key, value]) => (
+                        <div key={key}>
+                          <p className="font-montserrat-bold">{key}:</p>
+                          {key === "QR" ? (
+                            <img
+                              src={value}
+                              alt="Código QR para pago móvil"
+                              className="w-54 h-54 object-contain bg-white rounded-lg mx-auto my-2"
+                            />
+                          ) : (
+                            <p className="text-gray-300">{value}</p>
+                          )}
+                        </div>
+                      ))}
+
+                      <div
+                        className={
+                          paymentInfo.messageColor === "blue"
+                            ? "mt-4 p-3 bg-blue-500/20 rounded-lg"
+                            : paymentInfo.messageColor === "green"
+                            ? "mt-4 p-3 bg-green-500/20 rounded-lg"
+                            : paymentInfo.messageColor === "purple"
+                            ? "mt-4 p-3 bg-purple-500/20 rounded-lg"
+                            : paymentInfo.messageColor === "orange"
+                            ? "mt-4 p-3 bg-orange-500/20 rounded-lg"
+                            : "mt-4 p-3 bg-gray-500/20 rounded-lg"
+                        }
+                      >
+                        <p
+                          className={
+                            paymentInfo.messageColor === "blue"
+                              ? "text-xs text-blue-200"
+                              : paymentInfo.messageColor === "green"
+                              ? "text-xs text-green-200"
+                              : paymentInfo.messageColor === "purple"
+                              ? "text-xs text-purple-200"
+                              : paymentInfo.messageColor === "orange"
+                              ? "text-xs text-orange-200"
+                              : "text-xs text-gray-200"
+                          }
+                        >
+                          {paymentInfo.message}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-center text-gray-400">
+                  <p>Selecciona un método de pago para ver los detalles</p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       ),
     },
@@ -334,6 +741,32 @@ const Caroussel: FC<CarousselProps> = ({
     },
   ];
 
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setIsLoading(true);
+    try {
+      if (!validateFullForm()) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log("Formulario enviado:", formData);
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      console.log("Inscripción completada exitosamente");
+    } catch (error) {
+      console.error("Error al enviar el formulario:", error);
+      setErrors({
+        submit: "Error al procesar la inscripción. Intenta nuevamente.",
+      });
+    } finally {
+      setIsSubmitting(false);
+      setIsLoading(false);
+      handleNext();
+    }
+  };
+
   const handlePrevious = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -342,38 +775,74 @@ const Caroussel: FC<CarousselProps> = ({
 
   const handleNext = () => {
     if (currentStep < slides) {
-      setCurrentStep(currentStep + 1);
+      if (validateCurrentStep()) {
+        setCurrentStep(currentStep + 1);
+      }
+      return;
     }
+
+    handleSubmit();
   };
 
   return (
-    <div className="bg-glass w-full my-8 p-16 rounded-lg font-montserrat-light">
-      <div className="min-h-[300px] flex flex-col justify-center items-center">
-        <div
-          className="w-full transition-all duration-500 ease-in-out"
-          key={currentStep}
-        >
-          {slideContent[currentStep - 1]?.content}
-        </div>
-      </div>
+    <div className="bg-glass w-full my-8 px-12 py-4 rounded-lg font-montserrat-light">
+      {isLoading ? (
+        <Loader message="Validando..." />
+      ) : (
+        <>
+          <div className="min-h-[65vh] sm:max-h-[800px] flex flex-col justify-center items-center">
+            <div
+              className="w-full transition-all duration-500 ease-in-out"
+              key={currentStep}
+            >
+              {slideContent[currentStep - 1]?.content}
+            </div>
+          </div>
 
-      <div className="flex justify-between gap-4 mt-6">
-        <button
-          onClick={handlePrevious}
-          disabled={currentStep === 1}
-          className="cursor-pointer px-6 py-2 bg-glass font-montserrat-light rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80"
-        >
-          Anterior
-        </button>
+          {errors.submit && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mt-4">
+              {errors.submit}
+            </div>
+          )}
 
-        <button
-          onClick={handleNext}
-          disabled={currentStep === slides}
-          className="cursor-pointer px-6 py-2 bg-glass font-montserrat-light rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80"
-        >
-          {currentStep === slides ? "Finalizar" : "Siguiente"}
-        </button>
-      </div>
+          <div className="flex justify-between gap-4 mt-8 max-w-full">
+            <button
+              onClick={
+                currentStep === 1
+                  ? () => (window.location.href = "/")
+                  : handlePrevious
+              }
+              className="cursor-pointer px-6 py-2 bg-glass font-montserrat-light rounded-lg transition-all duration-200 hover:bg-opacity-80"
+            >
+              {currentStep === 1 ? "Volver a inicio" : "Anterior"}
+            </button>
+
+            <button
+              onClick={
+                currentStep === slides
+                  ? () => (window.location.href = "/")
+                  : currentStep === 4
+                  ? handleSubmit
+                  : handleNext
+              }
+              disabled={isSubmitting}
+              className={`cursor-pointer px-6 py-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80
+              ${
+                currentStep === 4
+                  ? " bg-[#f0f0f0] text-[#242424] font-montserrat-bold hover:bg-yellow-600"
+                  : "bg-glass font-montserrat-light "
+              }
+            `}
+            >
+              {currentStep === slides
+                ? "Terminar"
+                : currentStep === 4
+                ? "Pagar"
+                : "Siguiente"}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

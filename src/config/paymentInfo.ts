@@ -5,6 +5,7 @@ export interface PaymentInfo {
   };
   message: string;
   messageColor: string;
+  placeholder?: string;
 }
 
 export const paymentInformation: PaymentInfo[] = [
@@ -12,13 +13,14 @@ export const paymentInformation: PaymentInfo[] = [
     method: "Transferencia bancaria",
     data: {
       Banco: "Mercantil",
-      "Número de cuenta": "0102-0000-0000000000-00",
-      Titular: "XVII ROBLESMUN",
+      "Número de cuenta": "01050265901265101663",
       Cédula: "V-30.217.393",
+      Titular: "XVII ROBLESMUN",
     },
     message:
       "Realiza la transferencia y adjunta el comprobante en el siguiente paso.",
     messageColor: "blue",
+    placeholder: "Ej: 3317664",
   },
   {
     method: "Pago móvil",
@@ -27,37 +29,31 @@ export const paymentInformation: PaymentInfo[] = [
       Teléfono: "0412-996-8751",
       Cédula: "V-30.217.393",
       Titular: "XVII Roblesmun",
+      QR: "src/assets/img/qr-pagomovil.jpg",
     },
-    message: "Envía el pago móvil y guarda la confirmación SMS.",
-    messageColor: "green",
+    message:
+      "Envía los cuatro últimos dígitos del número de referencia de tu pago móvil.",
+    messageColor: "blue",
+    placeholder: "Ej: 1220",
   },
   {
     method: "Zelle",
     data: {
       "Correo electrónico": "mun@losroblesenlinea.com.ve",
     },
-    message: "Envía el pago vía Zelle y guarda la confirmación SMS.",
+    message: "Envía el código de confirmación de tu operación.",
     messageColor: "purple",
+    placeholder: "Ej: YB61KGYH",
   },
   {
     method: "Efectivo",
     data: {
       Ubicación: "U.E. Liceo Los Robles",
-      Dirección: "Av. Principal, Los Robles",
-      "Horario de atención": "Lunes a Viernes 8:00 AM - 4:00 PM",
-      Contacto: "0212-1234567",
+      Dirección: "Calle 34, Av. Fuerzas Armadas",
+      "Horario de atención": "Lunes a Viernes 8:00 AM - 2:00 PM",
+      Contacto: "0412-996-8751",
     },
     message: "Acércate a nuestras oficinas para realizar el pago en efectivo.",
-    messageColor: "orange",
+    messageColor: "green",
   },
 ];
-
-export const additionalMessages = {
-  "Transferencia bancaria":
-    "Una vez realizada la transferencia, tendrás 24 horas para enviar el comprobante.",
-  "Pago móvil":
-    "Confirma que el monto y datos sean correctos antes de realizar el pago móvil.",
-  Zelle: "Verifica que el correo sea correcto antes de enviar el pago.",
-  Efectivo:
-    "Reserva tu cupo ahora y paga en nuestras oficinas antes de la fecha límite.",
-};

@@ -18,7 +18,7 @@ const ProgressBar: FC<ProgressBarProps> = ({
 
   return (
     <div className={`w-full max-w-4xl mx-auto p-4 ${className}`}>
-      <div className="relative mb-8">
+      <div className="relative">
         <div className="absolute top-1/2 left-0 w-full h-1 bg-[#242424] rounded-full transform -translate-y-1/2" />
 
         <div
@@ -66,12 +66,6 @@ const ProgressBar: FC<ProgressBarProps> = ({
             );
           })}
         </div>
-      </div>
-
-      <div className="text-center">
-        <p className="text-sm font-montserrat-light text-gray-300">
-          Paso {currentStep} de {totalSteps}: {steps[currentStep - 1]}
-        </p>
       </div>
     </div>
   );
