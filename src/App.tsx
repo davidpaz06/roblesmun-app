@@ -11,6 +11,7 @@ import SponsorsView from "./views/SponsorsView";
 import CommitteesView from "./views/CommitteesView";
 import RegistrationsView from "./views/RegistrationsView";
 import Login from "./views/Login";
+import Registrations from "./views/Registrations";
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640),
@@ -22,7 +23,9 @@ function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const hideNavigation = ["/login"].includes(location.pathname);
+  const hideNavigation = ["/login", "/registrations/checkout"].includes(
+    location.pathname
+  );
 
   return (
     <AuthProvider>
@@ -41,6 +44,10 @@ function App() {
               <Route path="/login" element={<Login />} />
             </Routes>
           </main>
+
+          <Routes>
+            <Route path="/registrations/checkout" element={<Registrations />} />
+          </Routes>
 
           <Footer />
         </div>

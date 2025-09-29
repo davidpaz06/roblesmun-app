@@ -3,30 +3,30 @@ import type { FC } from "react";
 const Home: FC = () => {
   const board = [
     {
-      img: "src/assets/img/fazio.png",
+      img: "src/assets/img/jm.jpg",
       name: "Juan Miranda",
       role: "Secretario General",
     },
     {
-      img: "src/assets/img/fazio.png",
+      img: "src/assets/img/sm.jpg",
       name: "Samuel Morr",
       role: "Secretario General",
     },
     {
-      img: "src/assets/img/fazio.png",
+      img: "src/assets/img/cr.jpg",
       name: "Christian Ramírez",
       role: "Director Académico",
     },
     {
-      img: "src/assets/img/fazio.png",
+      img: "src/assets/img/tl.jpg",
       name: "Tomás Luzardo",
       role: "Director Ejecutivo",
     },
-    {
-      img: "src/assets/img/fazio.png",
-      name: "Benjamín Salazar",
-      role: "Faculty Advisor",
-    },
+    // {
+    //   img: "src/assets/img/fazio.png",
+    //   name: "Benjamín Salazar",
+    //   role: "Faculty Advisor",
+    // },
   ];
 
   return (
@@ -72,14 +72,14 @@ const Home: FC = () => {
           de ROBLESMUN.
         </p>
 
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-16">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-16">
           {board.map((person, idx) => (
             <div className="flex flex-col font-montserrat-light" key={idx}>
-              <div className="rounded-xl flex flex-col items-center">
+              <div className="rounded-xl overflow-hidden flex flex-col items-center">
                 <img
                   src={person.img}
                   alt={person.name}
-                  className="h-[320px] w-auto object-cover rounded-xl shadow-lg mb-8"
+                  className="h-[320px] w-auto object-cover rounded-xl shadow-lg mb-8 scale-125"
                 />
               </div>
               <h2 className="text-xl text-center underline underline-offset-6">

@@ -69,7 +69,7 @@ interface CarousselProps {
   slides: number;
   currentStep: number;
   paymentMethods?: string[];
-  formData: RegistrationForm;
+  formData?: RegistrationForm;
   setFormData: React.Dispatch<React.SetStateAction<RegistrationForm>>;
   setCurrentStep: (step: number) => void;
 }
@@ -107,7 +107,7 @@ const Caroussel: FC<CarousselProps> = ({
           return true;
       }
 
-      schema.parse(formData);
+      schema.parse(formData!);
       setErrors({});
       return true;
     } catch (error) {
@@ -124,10 +124,9 @@ const Caroussel: FC<CarousselProps> = ({
     }
   };
 
-  // Función para validar el formulario completo
   const validateFullForm = (): boolean => {
     try {
-      finalSchema.parse(formData);
+      finalSchema.parse(formData!);
       setErrors({});
       return true;
     } catch (error) {
@@ -147,7 +146,7 @@ const Caroussel: FC<CarousselProps> = ({
   const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seatsValue = parseInt(e.target.value) || 0;
 
-    setFormData((prev) => ({
+    setFormData!((prev) => ({
       ...prev,
       seats: seatsValue,
       independentDelegate: seatsValue === 1,
@@ -169,7 +168,7 @@ const Caroussel: FC<CarousselProps> = ({
   ) => {
     const uniqueSeat = `${committee} - ${seatName}`;
 
-    setFormData((prev) => {
+    setFormData!((prev) => {
       const newSeatsRequested = isChecked
         ? [...prev.seatsRequested, uniqueSeat]
         : prev.seatsRequested.filter((s) => s !== uniqueSeat);
@@ -189,7 +188,7 @@ const Caroussel: FC<CarousselProps> = ({
   };
 
   const handlePaymentMethod = (method: string) => {
-    setFormData((prev) => ({
+    setFormData!((prev) => ({
       ...prev,
       paymentMethod: method,
     }));
@@ -206,7 +205,7 @@ const Caroussel: FC<CarousselProps> = ({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const value = e.target.value;
-    setFormData((prev) => ({
+    setFormData!((prev) => ({
       ...prev,
       transactionId: value,
     }));
@@ -220,7 +219,7 @@ const Caroussel: FC<CarousselProps> = ({
   };
 
   const handleBackupToggle = (enabled: boolean) => {
-    setFormData((prev) => ({
+    setFormData!((prev) => ({
       ...prev,
       requiresBackup: enabled,
       backupSeatsRequested: enabled ? prev.backupSeatsRequested : [],
@@ -234,7 +233,7 @@ const Caroussel: FC<CarousselProps> = ({
   ) => {
     const uniqueSeat = `${committee} - ${seatName}`;
 
-    setFormData((prev) => {
+    setFormData!((prev) => {
       const newBackupSeatsRequested = isChecked
         ? [...prev.backupSeatsRequested, uniqueSeat]
         : prev.backupSeatsRequested.filter((s) => s !== uniqueSeat);
@@ -275,18 +274,18 @@ const Caroussel: FC<CarousselProps> = ({
               id="cupos"
               min="1"
               max="30"
-              value={formData.seats || ""}
+              value={formData!.seats || ""}
               onChange={handleSeatsChange}
               placeholder="0"
             />
           </label>
           <p className="mt-2 text-sm text-gray-300">
             Inscripción por:
-            {formData.seats > 0 && (
+            {formData!.seats > 0 && (
               <span className="block mt-1 font-montserrat-bold">
-                {formData.independentDelegate
+                {formData!.independentDelegate
                   ? "Delegado independiente"
-                  : formData.isBigGroup
+                  : formData!.isBigGroup
                   ? "Delegación grande"
                   : "Delegación pequeña"}
               </span>
@@ -299,37 +298,27 @@ const Caroussel: FC<CarousselProps> = ({
       title: "Seleccionar cupos",
       content: (
         <div className="w-full">
-          <h3 className="text-center py-4">
-            Cupos seleccionados: {formData.seatsRequested.length} /{" "}
-            {formData.seats}
-            {formData.requiresBackup && (
+          <h3 className="text-center py-2">
+            Cupos seleccionados: {formData!.seatsRequested.length} /{" "}
+            {formData!.seats}
+            {formData!.requiresBackup && (
               <span className="block text-sm text-gray-400">
-                Respaldo: {formData.backupSeatsRequested.length} /{" "}
-                {formData.seats * 2}
+                Respaldo: {formData!.backupSeatsRequested.length} /{" "}
+                {formData!.seats * 2}
               </span>
             )}
           </h3>
 
-          <label className="cursor-pointer text-sm font-montserrat-light flex items-center justify-center mb-4 gap-2 p-2">
+          <label className="cursor-pointer w-fit justify-self-center text-sm font-montserrat-light flex items-center justify-center gap-2 p-4">
             <input
               type="checkbox"
-              checked={formData.requiresBackup}
+              checked={formData!.requiresBackup}
               onChange={(e) => handleBackupToggle(e.target.checked)}
-              className="w-4 h-4 text-blue-600 bg-glass border-gray-600 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-blue-500"
             />
 
             <p>Cupos de respaldo</p>
           </label>
-
-          {formData.requiresBackup && (
-            <div className="text-center mb-4 px-4 py-2 bg-glass">
-              <p>
-                Los cupos de respaldo se usarán si tus primeras opciones no
-                están disponibles. Puedes seleccionar hasta {formData.seats * 2}{" "}
-                cupos de respaldo.
-              </p>
-            </div>
-          )}
 
           {errors.seatsRequested && (
             <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4 text-center">
@@ -345,27 +334,27 @@ const Caroussel: FC<CarousselProps> = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[400px] overflow-y-auto">
             {committees.map((committee) => (
-              <div key={committee.name} className="bg-glass/50 p-4 rounded-lg">
+              <div key={committee.name} className="bg-glass/50 p-2 rounded-lg">
                 <img
                   src={committee.img}
                   alt={committee.name}
-                  className="w-full h-32 object-contain mb-3"
+                  className="w-full h-48 object-contain mb-2"
                 />
-                <h4 className="font-montserrat-bold mb-3 text-center min-h-[40px] flex items-center justify-center">
+                <h4 className="font-montserrat-bold mb-2 text-center min-h-[40px] flex items-center justify-center">
                   {committee.name}
                 </h4>
 
-                <div className="mt-3 text-center">
-                  <span className="text-xs text-gray-300">
+                <div className="text-center">
+                  <span className="text-sm text-gray-300">
                     Cupos disponibles:
                     {
                       committee.seatsList.filter(
                         (seat) =>
                           seat.available &&
-                          !formData.seatsRequested.includes(
+                          !formData!.seatsRequested.includes(
                             `${committee.name} - ${seat.name}`
                           ) &&
-                          !formData.backupSeatsRequested.includes(
+                          !formData!.backupSeatsRequested.includes(
                             `${committee.name} - ${seat.name}`
                           )
                       ).length
@@ -377,9 +366,9 @@ const Caroussel: FC<CarousselProps> = ({
                   {committee.seatsList.map((seat, index) => {
                     const uniqueSeat = `${committee.name} - ${seat.name}`;
                     const isSelected =
-                      formData.seatsRequested.includes(uniqueSeat);
+                      formData!.seatsRequested.includes(uniqueSeat);
                     const isBackupSelected =
-                      formData.backupSeatsRequested.includes(uniqueSeat);
+                      formData!.backupSeatsRequested.includes(uniqueSeat);
 
                     return (
                       <div
@@ -426,7 +415,7 @@ const Caroussel: FC<CarousselProps> = ({
                           </span>
                         </label>
 
-                        {formData.requiresBackup && (
+                        {formData!.requiresBackup && (
                           <label
                             className={`flex items-center gap-2 py-1 text-xs cursor-pointer hover:bg-black/20 p-1 rounded transition-colors ml-4 ${
                               (!seat.available || isSelected) &&
@@ -443,8 +432,8 @@ const Caroussel: FC<CarousselProps> = ({
                               disabled={
                                 ((!seat.available || isSelected) &&
                                   !isBackupSelected) ||
-                                (formData.backupSeatsRequested.length >=
-                                  formData.seats * 2 &&
+                                (formData!.backupSeatsRequested.length >=
+                                  formData!.seats * 2 &&
                                   !isBackupSelected)
                               }
                               onChange={(e) =>
@@ -497,12 +486,12 @@ const Caroussel: FC<CarousselProps> = ({
                 key={method}
                 onClick={() => handlePaymentMethod(method)}
                 className={`cursor-pointer relative block w-full max-w-sm px-4 py-3 rounded-lg transition-all duration-200 ${
-                  formData.paymentMethod === method
+                  formData!.paymentMethod === method
                     ? "bg-[#f0f0f0] text-[#242424] font-montserrat-bold"
                     : "bg-glass"
                 } ${errors.paymentMethod ? "border border-red-500" : ""}`}
               >
-                {formData.paymentMethod === method && (
+                {formData!.paymentMethod === method && (
                   <FaCheck className="absolute left-[5%] top-1/2 transform -translate-y-1/2 text-[#242424]" />
                 )}
                 {method}
@@ -532,7 +521,7 @@ const Caroussel: FC<CarousselProps> = ({
               <div className="space-y-3 text-sm">
                 <div>
                   <p className="font-montserrat-bold">Cupos solicitados:</p>
-                  <p className="text-gray-300">{formData.seats}</p>
+                  <p className="text-gray-300">{formData!.seats}</p>
                 </div>
 
                 <div>
@@ -540,9 +529,9 @@ const Caroussel: FC<CarousselProps> = ({
                     Cupos principales:
                   </p>
                   <div className="max-h-32 overflow-y-auto bg-glass p-2 rounded">
-                    {formData.seatsRequested.length > 0 ? (
+                    {formData!.seatsRequested.length > 0 ? (
                       <ul className="text-xs space-y-1">
-                        {formData.seatsRequested.map((seat, index) => (
+                        {formData!.seatsRequested.map((seat, index) => (
                           <li key={index} className="text-green-300 py-1">
                             • {seat}
                           </li>
@@ -556,15 +545,15 @@ const Caroussel: FC<CarousselProps> = ({
                   </div>
                 </div>
 
-                {formData.requiresBackup &&
-                  formData.backupSeatsRequested.length > 0 && (
+                {formData!.requiresBackup &&
+                  formData!.backupSeatsRequested.length > 0 && (
                     <div>
                       <p className="font-montserrat-bold mb-2">
                         Cupos de respaldo:
                       </p>
                       <div className="max-h-32 overflow-y-auto bg-glass p-2 rounded">
                         <ul className="text-xs space-y-1">
-                          {formData.backupSeatsRequested.map((seat, index) => (
+                          {formData!.backupSeatsRequested.map((seat, index) => (
                             <li key={index} className="text-orange-300 py-1">
                               • {seat}
                             </li>
@@ -577,7 +566,7 @@ const Caroussel: FC<CarousselProps> = ({
                 <div>
                   <p className="font-montserrat-bold">Método de pago:</p>
                   <p className="text-gray-300">
-                    {formData.paymentMethod || "No seleccionado"}
+                    {formData!.paymentMethod || "No seleccionado"}
                   </p>
                 </div>
 
@@ -586,17 +575,17 @@ const Caroussel: FC<CarousselProps> = ({
                   <span className="text-green-400">
                     $
                     {(() => {
-                      const cuposCost = formData.seatsRequested.length * 10;
-                      const delegationFee = formData.independentDelegate
+                      const cuposCost = formData!.seatsRequested.length * 10;
+                      const delegationFee = formData!.independentDelegate
                         ? 0
-                        : formData.isBigGroup
+                        : formData!.isBigGroup
                         ? 30
                         : 20;
 
-                      formData.amount = Number(
+                      formData!.amount = Number(
                         (cuposCost + delegationFee).toFixed(2)
                       );
-                      return formData.amount;
+                      return formData!.amount;
                     })()}
                   </span>
                 </div>
@@ -605,20 +594,20 @@ const Caroussel: FC<CarousselProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>
-                        Cupos ({formData.seatsRequested.length} × $10.00):
+                        Cupos ({formData!.seatsRequested.length} × $10.00):
                       </span>
                       <span>
-                        ${(formData.seatsRequested.length * 10).toFixed(2)}
+                        ${(formData!.seatsRequested.length * 10).toFixed(2)}
                       </span>
                     </div>
 
-                    {!formData.independentDelegate && (
+                    {!formData!.independentDelegate && (
                       <div className="flex justify-between text-sm">
                         <span>
                           Tarifa de delegación (
-                          {formData.isBigGroup ? "grande" : "pequeña"}):
+                          {formData!.isBigGroup ? "grande" : "pequeña"}):
                         </span>
-                        <span>${formData.isBigGroup ? "30.00" : "20.00"}</span>
+                        <span>${formData!.isBigGroup ? "30.00" : "20.00"}</span>
                       </div>
                     )}
                   </div>
@@ -633,11 +622,11 @@ const Caroussel: FC<CarousselProps> = ({
                     <input
                       id="transactionId"
                       type="text"
-                      value={formData.transactionId}
+                      value={formData!.transactionId}
                       onChange={handleTransactionIdChange}
                       placeholder={
                         paymentInformation.find(
-                          (info) => info.method === formData.paymentMethod
+                          (info) => info.method === formData!.paymentMethod
                         )?.placeholder || "Ej: 1234567890"
                       }
                       className={`w-full px-3 py-2 rounded bg-glass border text-[#f0f0f0] font-montserrat-light focus:outline-none focus:ring-2 ${
@@ -656,10 +645,10 @@ const Caroussel: FC<CarousselProps> = ({
                 Información de pago
               </h4>
 
-              {formData.paymentMethod ? (
+              {formData!.paymentMethod ? (
                 (() => {
                   const paymentInfo = paymentInformation.find(
-                    (info) => info.method === formData.paymentMethod
+                    (info) => info.method === formData!.paymentMethod
                   );
 
                   if (!paymentInfo) return null;
@@ -734,7 +723,7 @@ const Caroussel: FC<CarousselProps> = ({
             Revisa tu correo para más detalles.
           </p>
           <div className="mt-4 text-sm text-gray-300">
-            <p>ID de transacción: {formData.transactionId || "Pendiente"}</p>
+            <p>ID de transacción: {formData!.transactionId || "Pendiente"}</p>
           </div>
         </div>
       ),
@@ -750,7 +739,7 @@ const Caroussel: FC<CarousselProps> = ({
         return;
       }
 
-      console.log("Formulario enviado:", formData);
+      console.log("Formulario enviado:", formData!);
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -790,7 +779,7 @@ const Caroussel: FC<CarousselProps> = ({
         <Loader message="Validando..." />
       ) : (
         <>
-          <div className="min-h-[65vh] sm:max-h-[800px] flex flex-col justify-center items-center">
+          <div className="min-h-[60vh] sm:max-h-[800px] flex flex-col justify-center items-center">
             <div
               className="w-full transition-all duration-500 ease-in-out"
               key={currentStep}

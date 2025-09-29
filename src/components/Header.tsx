@@ -9,7 +9,7 @@ import { useAuth } from "../context/AuthContext";
 const Header: FC = () => {
   const { user, logout } = useAuth();
   const headerTabs = [
-    { name: "PRENSA", path: "/press" },
+    // { name: "PRENSA", path: "/press" },
     { name: "PATROCINADORES", path: "/sponsors" },
     { name: "COMITÉS", path: "/committees" },
     { name: "INSCRIPCIONES", path: "/registrations" },

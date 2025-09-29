@@ -4,7 +4,7 @@ export const committees: Committee[] = [
   {
     name: "Tribunal de Distrito de los Estados Unidos para el Distrito Sur de Nueva York",
     topic: "Caso de Sean Combs (P. Diddy)",
-    img: "src/assets/img/2.png",
+    img: "/public/2.png",
     color: "purple-900",
     seats: 20,
     seatsList: [
@@ -17,7 +17,7 @@ export const committees: Committee[] = [
       { name: "Japón", available: true },
       { name: "India", available: true },
       { name: "Brasil", available: true },
-      { name: "Canadá", available: true },
+      { name: "Canadá", available: false },
       { name: "Australia", available: true },
       { name: "Italia", available: true },
       { name: "España", available: true },
@@ -40,7 +40,7 @@ export const committees: Committee[] = [
   {
     name: "Asamblea General",
     topic: "Genocidio de Camboya (1979)",
-    img: "src/assets/img/ag.png",
+    img: "/public/ag.png",
     color: "red-900",
     seats: 193,
     seatsList: [
@@ -76,7 +76,7 @@ export const committees: Committee[] = [
   {
     name: "Cabinet of the United Kingdom",
     topic: "London Bombing (2005)",
-    img: "src/assets/img/3.png",
+    img: "/public/3.png",
     color: "gray-900",
     seats: 20,
     seatsList: [
@@ -107,7 +107,7 @@ export const committees: Committee[] = [
   {
     name: "Consejo de Seguridad",
     topic: "Tercera Guerra Mundial (2050)",
-    img: "src/assets/img/4.png",
+    img: "/public/4.png",
     color: "yellow-900",
     seats: 15,
     seatsList: [
@@ -138,7 +138,7 @@ export const committees: Committee[] = [
   {
     name: "Cumbre para la reestructuración política global",
     topic: "Nuevo Orden Mundial (2050)",
-    img: "src/assets/img/5.png",
+    img: "/public/5.png",
     color: "gray-900",
     seats: 50,
     seatsList: [
@@ -167,7 +167,7 @@ export const committees: Committee[] = [
   {
     name: "Organización Mundial de la Salud",
     topic: "Rebrote de la Peste Negra (2050)",
-    img: "src/assets/img/6.png",
+    img: "/public/6.png",
     color: "green-900",
     seats: 194,
     seatsList: [
@@ -196,7 +196,7 @@ export const committees: Committee[] = [
   {
     name: "Laboratorio Nacional de Los Álamos",
     topic: "Proyecto Manhattan",
-    img: "src/assets/img/7.png",
+    img: "/public/7.png",
     color: "orange-900",
     seats: 10,
     seatsList: [
