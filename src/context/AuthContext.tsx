@@ -7,27 +7,24 @@ import {
   type FC,
 } from "react";
 import type { User } from "../interfaces/User";
+import type { FacultyCode } from "../interfaces/FacultyCode";
+import type { RegisterData } from "../interfaces/RegisterData";
+import type { LoginData } from "../interfaces/LoginData";
+
+import { FirestoreService } from "../firebase/firestore";
+import { AuthService } from "../firebase/auth";
+import { where } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase/firebase";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (userData: LoginData) => Promise<boolean>;
   logout: () => void;
   register: (userData: RegisterData) => Promise<boolean>;
-}
-
-interface LoginData {
-  email: string;
-  password: string;
-}
-
-interface RegisterData {
-  email: string;
-  password: string;
-  name: string;
-  institution?: string;
-  facultyCode?: string | null;
+  checkFacultyCode: (userData: RegisterData) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,45 +42,49 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        if (token) {
-          // Aquí harías una petición a tu API para validar el token
-          // Por ahora simularemos con un usuario de prueba
-          const userData = localStorage.getItem("userData");
-          if (userData) {
-            setUser(JSON.parse(userData));
+    let unsubscribe: (() => void) | undefined;
+
+    AuthService.getCurrentUser().then(async (firebaseUser) => {
+      if (firebaseUser) {
+        unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            const results = await FirestoreService.getAll<User>("users", [
+              where("id", "==", user.uid),
+            ]);
+            setUser(results[0] || null);
+          } else {
+            setUser(null);
           }
-        }
-      } catch (error) {
-        console.error("Error checking auth status:", error);
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("userData");
-      } finally {
+          setIsLoading(false);
+        });
+      } else {
+        setUser(null);
         setIsLoading(false);
       }
-    };
+    });
 
-    checkAuthStatus();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const login = async (userData: LoginData): Promise<boolean> => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const user = await AuthService.login(userData.email, userData.password);
+      if (!user) throw new Error("User does not exist");
 
-      // Validación básica (reemplazar con lógica real)
-      const user: User = {
-        id: "1",
-        email: userData.email,
-        role: userData.email.includes("admin") ? "admin" : "participant",
-      };
+      const results = await FirestoreService.getAll<User>("users", [
+        where("id", "==", user.uid),
+      ]);
+      if (results.length === 0)
+        throw new Error("No user profile found in database");
 
-      localStorage.setItem("authToken", "mock_token_" + Date.now());
-      localStorage.setItem("userData", JSON.stringify(user));
+      const token = await user.getIdToken();
+      localStorage.setItem("authToken", token);
 
-      setUser(user);
+      setUser(results[0]);
+
       return true;
     } catch (error) {
       console.error("Login error:", error);
@@ -95,33 +96,73 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const register = async (userData: RegisterData): Promise<boolean> => {
     setIsLoading(true);
+    console.log("Registering user:", userData);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const isFaculty = await checkFacultyCode(userData);
 
-      const newUser: User = {
-        id: Date.now().toString(),
+      const userExists = await FirestoreService.getAll<User>("users", [
+        where("email", "==", userData.email),
+      ]);
+      if (userExists.length > 0) {
+        throw new Error("User with this email already exists");
+      }
+
+      const firebaseUser = await AuthService.register(
+        userData.email,
+        userData.password
+      );
+
+      await FirestoreService.add<User>("users", {
+        id: firebaseUser.uid,
         email: userData.email,
-        name: userData.name,
-        role: "participant",
-      };
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        institution: userData.institution || "",
+        isFaculty,
+      });
 
-      localStorage.setItem("authToken", "mock_token_" + Date.now());
-      localStorage.setItem("userData", JSON.stringify(newUser));
+      await login({ email: userData.email, password: userData.password });
 
-      setUser(newUser);
       return true;
     } catch (error) {
       console.error("Register error:", error);
-      return false;
+      throw new Error("Error registering user: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userData");
-    setUser(null);
+  const checkFacultyCode = async (userData: RegisterData): Promise<boolean> => {
+    try {
+      const results = await FirestoreService.getAll<FacultyCode>(
+        "facultyCodes",
+        [where("institution", "==", userData.institution)]
+      );
+      if (
+        results.length > 0 &&
+        results[0].facultyCode === userData.facultyCode
+      ) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking faculty code:", error);
+      throw new Error(
+        "Error checking faculty code: " + (error as Error).message
+      );
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await AuthService.logout();
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
+      setUser(null);
+    } catch (error) {
+      console.error("Logout error:", error);
+      throw new Error("Error logging out: " + (error as Error).message);
+    }
   };
 
   const value: AuthContextType = {
@@ -131,6 +172,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     login,
     logout,
     register,
+    checkFacultyCode,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

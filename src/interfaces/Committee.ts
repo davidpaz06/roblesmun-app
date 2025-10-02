@@ -11,4 +11,5 @@ export interface Committee {
   description?: string;
   studyGuide?: string;
   legalFramework?: string[];
+  president?: string;
 }

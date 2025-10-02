@@ -1,9 +1,10 @@
 import type { FC } from "react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "../context/AuthContext";
 import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
+import type { LoginData } from "../interfaces/LoginData";
 
 const loginSchema = z.object({
   email: z
@@ -57,7 +58,7 @@ interface FormFields {
 }
 
 const Login: FC = () => {
-  const { login, register, isLoading } = useAuth();
+  const { login, register, checkFacultyCode, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<FormData>({
@@ -71,7 +72,10 @@ const Login: FC = () => {
     [errors, setErrors] = useState<Record<string, string>>({}),
     [showPassword, setShowPassword] = useState<boolean>(false),
     [isRegistering, setIsRegistering] = useState<boolean>(false),
-    [isFaculty, setIsFaculty] = useState<boolean>(false);
+    [isFaculty, setIsFaculty] = useState<boolean>(false),
+    [facultyCodeValid, setFacultyCodeValid] = useState<boolean | null>(null),
+    [facultyCodeChecking, setFacultyCodeChecking] = useState<boolean>(false),
+    facultyCodeDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const formFields: Array<FormFields> = [
     {
@@ -139,6 +143,43 @@ const Login: FC = () => {
     }
   };
 
+  const handleFacultyCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      facultyCode: value,
+    }));
+
+    if (errors.facultyCode) {
+      setErrors((prev) => ({
+        ...prev,
+        facultyCode: "",
+      }));
+    }
+
+    setFacultyCodeValid(null);
+    if (facultyCodeDebounceRef.current) {
+      clearTimeout(facultyCodeDebounceRef.current);
+    }
+    if (isFaculty) {
+      setFacultyCodeChecking(true);
+      facultyCodeDebounceRef.current = setTimeout(async () => {
+        const isValid = await checkFacultyCode({
+          ...formData,
+          facultyCode: value,
+        });
+        setFacultyCodeValid(isValid);
+        setFacultyCodeChecking(false);
+        if (!isValid) {
+          setErrors((prev) => ({
+            ...prev,
+            facultyCode: "Código de facultad inválido",
+          }));
+        }
+      }, 500);
+    }
+  };
+
   const validateForm = () => {
     try {
       let schema;
@@ -179,7 +220,8 @@ const Login: FC = () => {
       const success = await register({
         email: formData.email,
         password: formData.password,
-        name: `${formData.firstName} ${formData.lastName}`,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         institution: formData.institution,
         facultyCode: isFaculty ? formData.facultyCode : null,
       });
@@ -192,7 +234,11 @@ const Login: FC = () => {
         });
       }
     } else {
-      const success = await login(formData.email, formData.password);
+      const loginData: LoginData = {
+        email: formData.email,
+        password: formData.password,
+      };
+      const success = await login(loginData);
 
       if (success) {
         navigate("/");
@@ -265,12 +311,6 @@ const Login: FC = () => {
             onSubmit={handleSubmit}
             className="space-y-6 p-6 rounded-lg mt-8 w-[90%] max-w-lg sm:h-120 max-h-[75dvh] overflow-y-auto"
           >
-            {errors.submit && (
-              <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded">
-                {errors.submit}
-              </div>
-            )}
-
             {fieldsToShow.map((field) => (
               <div key={field.name} className="flex flex-col">
                 <label
@@ -386,7 +426,7 @@ const Login: FC = () => {
                   id="facultyCode"
                   name="facultyCode"
                   value={formData.facultyCode}
-                  onChange={handleChange}
+                  onChange={handleFacultyCodeChange}
                   placeholder="Ingresa tu código de Faculty"
                   className={`p-2 bg-glass rounded-lg focus:outline-none focus:ring-2 transition-colors ${
                     errors.facultyCode
@@ -399,12 +439,28 @@ const Login: FC = () => {
                     {errors.facultyCode}
                   </span>
                 )}
+                {facultyCodeValid && !errors.facultyCode && (
+                  <span className="text-green-400 text-sm mt-1 font-montserrat-light">
+                    Código de faculty de: {formData.institution}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {errors.submit && (
+              <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded">
+                {errors.submit}
               </div>
             )}
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={
+                isLoading ||
+                (isRegistering &&
+                  isFaculty &&
+                  (facultyCodeValid === false || facultyCodeChecking))
+              }
               className="w-full py-3 bg-glass cursor-pointer rounded-lg font-montserrat-bold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading
@@ -412,7 +468,9 @@ const Login: FC = () => {
                   ? "REGISTRANDO..."
                   : "INICIANDO SESIÓN..."
                 : isRegistering
-                ? "REGISTRARSE"
+                ? facultyCodeChecking
+                  ? "Verificando código..."
+                  : "REGISTRARSE"
                 : "INICIAR SESIÓN"}
             </button>
           </form>

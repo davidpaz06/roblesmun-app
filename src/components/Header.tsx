@@ -41,9 +41,21 @@ const Header: FC = () => {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       {user ? (
-        <span className="p-2 absolute top-[-4px] right-0 z-10 flex items-center gap-2 text-xs">
+        <span
+          onClick={() => {
+            console.log(user);
+          }}
+          className="p-2 absolute top-[-4px] right-0 z-10 flex items-center gap-2 text-xs"
+        >
           <CiUser size={24} />
           <p>{user.email}</p>
+
+          <button
+            className="p-2  flex items-center gap-2 text-xs bg-glass cursor-pointer"
+            onClick={logout}
+          >
+            Cerrar sesión
+          </button>
         </span>
       ) : (
         <Link to="/login">

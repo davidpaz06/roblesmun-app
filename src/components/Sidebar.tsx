@@ -75,16 +75,21 @@ const Sidebar: FC = () => {
           </ul>
 
           <div className="mt-4">
-            {user && <CiLogout size={32} className="absolute bottom-24" />}
             {user && (
-              <span className="absolute bottom-20 left-4 text-[#f0f0f0] text-sm">
-                <p
-                  className="absolute bottom-20 block py-4 font-montserrat-light text-[#f0f0f0] hover:text-gray-300 cursor-pointer"
+              <div className=" font-montserrat-light text-[#f0f0f0]">
+                <span className="absolute bottom-20 left-4 text-sm">
+                  {user.email}
+                </span>
+                <span
                   onClick={logout}
+                  className="absolute bottom-4 left-4 text-sm cursor-pointer flex items-center gap-2"
                 >
-                  Cerrar sesión
-                </p>
-              </span>
+                  <CiLogout size={28} className="mr-2" />
+                  <p className="py-4  hover:text-gray-300 cursor-pointer m-0">
+                    Cerrar sesión
+                  </p>
+                </span>
+              </div>
             )}
           </div>
         </nav>

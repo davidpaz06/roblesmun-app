@@ -22,11 +22,6 @@ const Home: FC = () => {
       name: "Tomás Luzardo",
       role: "Director Ejecutivo",
     },
-    // {
-    //   img: "src/assets/img/fazio.png",
-    //   name: "Benjamín Salazar",
-    //   role: "Faculty Advisor",
-    // },
   ];
 
   return (
@@ -72,7 +67,7 @@ const Home: FC = () => {
           de ROBLESMUN.
         </p>
 
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-16">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-16">
           {board.map((person, idx) => (
             <div className="flex flex-col font-montserrat-light" key={idx}>
               <div className="rounded-xl overflow-hidden flex flex-col items-center">
