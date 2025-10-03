@@ -5,7 +5,7 @@ export const committees: Committee[] = [
     name: "Tribunal de Distrito de los Estados Unidos para el Distrito Sur de Nueva York",
     topic: "Caso de Sean Combs (P. Diddy)",
     img: "/public/2.png",
-    color: "purple-900",
+    // color: "purple-900",
     seats: 20,
     seatsList: [
       { name: "Estados Unidos", available: false },
@@ -36,12 +36,13 @@ export const committees: Committee[] = [
       "https://es.wikipedia.org/wiki/Sean_Combs#Incidentes_legales",
       "https://www.nytimes.com/2001/05/25/nyregion/diddy-is-acquitted-in-shooting-at-club.html",
     ],
+    president: "Andrés Caridad",
   },
   {
     name: "Asamblea General",
     topic: "Genocidio de Camboya (1979)",
     img: "/public/ag.png",
-    color: "red-900",
+    // color: "red-900",
     seats: 193,
     seatsList: [
       { name: "Estados Unidos", available: true },
@@ -72,12 +73,13 @@ export const committees: Committee[] = [
       "https://es.wikipedia.org/wiki/Genocidio_camboyano",
       "https://www.un.org/en/genocideprevention/cambodia.shtml",
     ],
+    president: "Rodrigo Sarcos",
   },
   {
     name: "Cabinet of the United Kingdom",
     topic: "London Bombing (2005)",
     img: "/public/3.png",
-    color: "gray-900",
+    // color: "gray-900",
     seats: 20,
     seatsList: [
       { name: "Estados Unidos", available: true },
@@ -103,12 +105,18 @@ export const committees: Committee[] = [
     ],
     description:
       "El Gabinete del Reino Unido es el principal órgano de toma de decisiones del gobierno británico y está compuesto por los ministros más importantes, incluyendo al Primer Ministro y a los jefes de los departamentos gubernamentales. El Gabinete se reúne regularmente para discutir y coordinar políticas en una amplia gama de temas, incluyendo la economía, la seguridad nacional, la salud y la educación. En este comité, los delegados asumirán el papel de miembros del Gabinete y debatirán sobre los atentados de Londres que ocurrieron el 7 de julio de 2005. Estos ataques terroristas coordinados tuvieron como objetivo el sistema de transporte público de Londres y resultaron en la muerte de 52 personas y cientos de heridos. Los delegados deberán analizar las causas y consecuencias de los atentados, así como proponer medidas para mejorar la seguridad nacional y prevenir futuros actos de terrorismo en el Reino Unido.",
+    studyGuide: "https://www.gov.uk/government/ministers",
+    legalFramework: [
+      "https://es.wikipedia.org/wiki/Atentados_de_londres_de_2005",
+      "https://www.gov.uk/government/news/london-bombings-7-july-2005",
+    ],
+    president: "Isaac Jatem",
   },
   {
     name: "Consejo de Seguridad",
     topic: "Tercera Guerra Mundial (2050)",
     img: "/public/4.png",
-    color: "yellow-900",
+    // color: "yellow-900",
     seats: 15,
     seatsList: [
       { name: "Estados Unidos", available: true },
@@ -139,7 +147,7 @@ export const committees: Committee[] = [
     name: "Cumbre para la reestructuración política global",
     topic: "Nuevo Orden Mundial (2050)",
     img: "/public/5.png",
-    color: "gray-900",
+    // color: "gray-900",
     seats: 50,
     seatsList: [
       { name: "Estados Unidos", available: true },
@@ -168,7 +176,7 @@ export const committees: Committee[] = [
     name: "Organización Mundial de la Salud",
     topic: "Rebrote de la Peste Negra (2050)",
     img: "/public/6.png",
-    color: "green-900",
+    // color: "green-900",
     seats: 194,
     seatsList: [
       { name: "Estados Unidos", available: true },
@@ -197,7 +205,7 @@ export const committees: Committee[] = [
     name: "Laboratorio Nacional de Los Álamos",
     topic: "Proyecto Manhattan",
     img: "/public/7.png",
-    color: "orange-900",
+    // color: "orange-900",
     seats: 10,
     seatsList: [
       { name: "Estados Unidos", available: true },

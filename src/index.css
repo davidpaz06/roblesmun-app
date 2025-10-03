@@ -96,8 +96,8 @@ p {
   border-radius: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(1.15em);
+  -webkit-backdrop-filter: blur(1.15em);
 }
 
 .scrollbar-hide {

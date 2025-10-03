@@ -1,4 +1,4 @@
-import { type FC, useState } from "react";
+import { type FC, useRef, useState } from "react";
 import { z } from "zod";
 import { committees } from "../config/committees";
 import { paymentInformation } from "../config/paymentInfo";
@@ -85,6 +85,8 @@ const Caroussel: FC<CarousselProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({}),
     [isSubmitting, setIsSubmitting] = useState<boolean>(false),
     [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const rate = useRef(180);
 
   const validateCurrentStep = (): boolean => {
     try {
@@ -589,6 +591,9 @@ const Caroussel: FC<CarousselProps> = ({
                     })()}
                   </span>
                 </div>
+                <span className="text-sm text-right font-montserrat-bold">
+                  <p>Bs. {(formData!.amount * rate.current).toFixed(2)}</p>
+                </span>
 
                 <div className="mt-4 pt-3 border-t border-[#282828]">
                   <div className="space-y-2">
@@ -612,30 +617,32 @@ const Caroussel: FC<CarousselProps> = ({
                     )}
                   </div>
 
-                  <div className="mt-4">
-                    <label
-                      htmlFor="transactionId"
-                      className="font-montserrat-bold block mb-2"
-                    >
-                      Número de referencia / confirmación:
-                    </label>
-                    <input
-                      id="transactionId"
-                      type="text"
-                      value={formData!.transactionId}
-                      onChange={handleTransactionIdChange}
-                      placeholder={
-                        paymentInformation.find(
-                          (info) => info.method === formData!.paymentMethod
-                        )?.placeholder || "Ej: 1234567890"
-                      }
-                      className={`w-full px-3 py-2 rounded bg-glass border text-[#f0f0f0] font-montserrat-light focus:outline-none focus:ring-2 ${
-                        errors.transactionId
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-gray-600 focus:ring-blue-500"
-                      }`}
-                    />
-                  </div>
+                  {formData!.paymentMethod !== "Efectivo" && (
+                    <div className="mt-4">
+                      <label
+                        htmlFor="transactionId"
+                        className="font-montserrat-bold block mb-2"
+                      >
+                        Número de referencia / confirmación:
+                      </label>
+                      <input
+                        id="transactionId"
+                        type="text"
+                        value={formData!.transactionId}
+                        onChange={handleTransactionIdChange}
+                        placeholder={
+                          paymentInformation.find(
+                            (info) => info.method === formData!.paymentMethod
+                          )?.placeholder || "Ej: 1234567890"
+                        }
+                        className={`w-full px-3 py-2 rounded bg-glass border text-[#f0f0f0] font-montserrat-light focus:outline-none focus:ring-2 ${
+                          errors.transactionId
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-gray-600 focus:ring-blue-500"
+                        }`}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -774,12 +781,12 @@ const Caroussel: FC<CarousselProps> = ({
   };
 
   return (
-    <div className="bg-glass w-full my-8 px-12 py-4 rounded-lg font-montserrat-light">
+    <div className="bg-glass w-full my-8 px-12 py-8 rounded-lg font-montserrat-light">
       {isLoading ? (
         <Loader message="Validando..." />
       ) : (
         <>
-          <div className="min-h-[60vh] sm:max-h-[800px] flex flex-col justify-center items-center">
+          <div className="min-h-[60vh] sm:max-h-[900px] md:max-h-[1200px] flex flex-col justify-center items-center">
             <div
               className="w-full transition-all duration-500 ease-in-out"
               key={currentStep}
@@ -818,7 +825,7 @@ const Caroussel: FC<CarousselProps> = ({
               className={`cursor-pointer px-6 py-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80
               ${
                 currentStep === 4
-                  ? " bg-[#f0f0f0] text-[#242424] font-montserrat-bold hover:bg-yellow-600"
+                  ? " bg-[#f0f0f0] text-[#242424] font-montserrat-bold hover:bg-yellow-600 hover:text-[#f0f0f0]"
                   : "bg-glass font-montserrat-light "
               }
             `}

@@ -26,7 +26,7 @@ const SponsorsCaroussel: FC<SponsorsCarousselProps> = ({
       <div className="flex items-center justify-center h-48 w-full transition-all duration-700 ease-in-out">
         <img
           src={sponsors[currentSlide].logo}
-          alt={`Logo patrocinador ${currentSlide + 1}`}
+          alt={`Logo de ${sponsors[currentSlide].name}`}
           className="max-h-48 max-w-full object-contain"
         />
       </div>

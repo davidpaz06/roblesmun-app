@@ -36,9 +36,15 @@ const CommitteeModal: FC<{
 
         <div className="w-full space-y-2 mb-4">
           <p className="text-sm md:text-base">
-            <span className="font-montserrat-bold">Tema:</span>{" "}
+            <span className="font-montserrat-bold">Tópico:</span>{" "}
             {committee.topic}
           </p>
+
+          <p className="text-sm md:text-base">
+            <span className="font-montserrat-bold">Presidente:</span>{" "}
+            {committee.president || "Próximamente disponible"}
+          </p>
+
           <p className="text-sm md:text-base">
             <span className="font-montserrat-bold">Cupos:</span>{" "}
             {committee.seats}
@@ -59,7 +65,7 @@ const CommitteeModal: FC<{
         <video
           className="w-full rounded-lg shadow-lg cursor-pointer mb-6"
           controls
-          src="/videos/XVI ROBLESMUN INAUGURACION.mp4"
+          src={committee.video || "/videos/XVI ROBLESMUN INAUGURACION.mp4"}
         />
 
         <div className="space-y-6">

@@ -77,7 +77,7 @@ const Home: FC = () => {
                   className="h-[320px] w-auto object-cover rounded-xl shadow-lg mb-8 scale-125"
                 />
               </div>
-              <h2 className="text-xl text-center underline underline-offset-6">
+              <h2 className="text-xl text-center mt-4 font-montserrat-bold underline underline-offset-6">
                 {person.name}
               </h2>
               <h3 className="text-base text-center">{person.role}</h3>
