@@ -4,24 +4,6 @@ import { FirestoreService } from "../firebase/firestore";
 import type { Sponsor } from "../interfaces/Sponsor";
 import Loader from "../components/Loader";
 
-const localSponsors: Sponsor[] = [
-  {
-    name: "Patrocinador 1",
-    logo: "/assets/img/sponsor1.png",
-    description: "Patrocinador 1: Apoya la educación y el liderazgo juvenil.",
-  },
-  {
-    name: "Patrocinador 2",
-    logo: "/assets/img/sponsor2.png",
-    description: "Patrocinador 2: Comprometido con el desarrollo social.",
-  },
-  {
-    name: "Patrocinador 3",
-    logo: "/assets/img/sponsor3.png",
-    description: "Patrocinador 3: Innovación y excelencia en servicios.",
-  },
-];
-
 const SponsorsView: FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -31,10 +13,10 @@ const SponsorsView: FC = () => {
     setIsLoading(true);
     try {
       const data = await FirestoreService.getAll<Sponsor>("sponsors");
-      setSponsors(data.length > 0 ? data : localSponsors);
+      setSponsors(data.length > 0 ? data : []);
     } catch (error) {
       console.error("Error fetching sponsors:", error);
-      setSponsors(localSponsors);
+      setSponsors([]);
     } finally {
       setIsLoading(false);
     }
