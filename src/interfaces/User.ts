@@ -5,4 +5,5 @@ export interface User {
   lastName: string;
   institution: string;
   isFaculty: boolean;
+  isAdmin: boolean;
 }

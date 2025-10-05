@@ -12,6 +12,9 @@ import CommitteesView from "./views/CommitteesView";
 import RegistrationsView from "./views/RegistrationsView";
 import Login from "./views/Login";
 import Registrations from "./views/Registrations";
+import AdminDashboard from "./views/admin/AdminDashboard";
+import SponsorsManagement from "./views/admin/SponsorsManagement";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640),
@@ -23,9 +26,9 @@ function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const hideNavigation = ["/login", "/registrations/checkout"].includes(
-    location.pathname
-  );
+  const hideNavigation =
+    ["/login", "/registrations/checkout"].includes(location.pathname) ||
+    location.pathname.startsWith("/admin");
 
   return (
     <AuthProvider>
@@ -42,14 +45,33 @@ function App() {
               <Route path="/registrations" element={<RegistrationsView />} />
               <Route path="/committees" element={<CommitteesView />} />
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/registrations/checkout"
+                element={<Registrations />}
+              />
             </Routes>
           </main>
 
           <Routes>
-            <Route path="/registrations/checkout" element={<Registrations />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/sponsors"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <SponsorsManagement />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
 
-          <Footer />
+          {!hideNavigation && <Footer />}
         </div>
       </SlotsProvider>
     </AuthProvider>

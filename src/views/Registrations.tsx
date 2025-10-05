@@ -1,12 +1,21 @@
 import { useState, type FC } from "react";
+import { useAuth } from "../context/AuthContext";
 import ProgressBar from "../components/ProgressBar";
 import Caroussel from "../components/Caroussel";
 import type { RegistrationForm } from "../interfaces/RegistrationForm";
 
 const RegistrationsView: FC = () => {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+
   const [formData, setFormData] = useState<RegistrationForm>({
-    institution: "",
+    userEmail: user?.email || "",
+    userInstitution: user?.institution || "",
+    userFirstName: user?.firstName || "",
+    userLastName: user?.lastName || "",
+    userIsFaculty: user?.isFaculty || false,
+
+    institution: user?.institution || "",
     isBigGroup: false,
     independentDelegate: false,
     seats: 0,

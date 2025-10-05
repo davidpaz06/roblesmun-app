@@ -9,7 +9,7 @@ import { useAuth } from "../context/AuthContext";
 const Header: FC = () => {
   const { user, logout } = useAuth();
   const headerTabs = [
-    // { name: "PRENSA", path: "/press" },
+    { name: "PRENSA", path: "/press" },
     { name: "PATROCINADORES", path: "/sponsors" },
     { name: "COMITÉS", path: "/committees" },
     { name: "INSCRIPCIONES", path: "/registrations" },
@@ -88,6 +88,17 @@ const Header: FC = () => {
               </Link>
             </li>
           ))}
+
+          {user?.isAdmin && (
+            <li className="h-full">
+              <Link
+                className="h-full flex items-center px-3 md:px-6"
+                to="/admin"
+              >
+                ADMIN
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
     </motion.header>

@@ -5,6 +5,9 @@ import { paymentInformation } from "../config/paymentInfo";
 import type { RegistrationForm } from "../interfaces/RegistrationForm";
 import { FaCheck } from "react-icons/fa6";
 import Loader from "./Loader";
+import { PDFGenerator } from "./PDFGenerator";
+import { FirestoreService } from "../firebase/firestore";
+// import { FirestoreService } from "../firebase/firestore";
 
 const step1Schema = z.object({
   seats: z
@@ -516,6 +519,38 @@ const Caroussel: FC<CarousselProps> = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mx-auto">
             <div className="bg-glass/30 p-6 rounded-lg">
+              <div className="mb-6 pb-4 border-b border-gray-600">
+                <h4 className="font-montserrat-bold mb-3 text-lg">
+                  Información del Usuario
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-montserrat-bold">Nombre:</span>
+                    <span className="ml-2 text-gray-300">
+                      {formData!.userFirstName} {formData!.userLastName}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-montserrat-bold">Correo:</span>
+                    <span className="ml-2 text-gray-300">
+                      {formData!.userEmail}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-montserrat-bold">Institución:</span>
+                    <span className="ml-2 text-gray-300">
+                      {formData!.userInstitution}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-montserrat-bold">Tipo:</span>
+                    <span className="ml-2 text-gray-300">
+                      {formData!.userIsFaculty ? "Faculty" : "Estudiante"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <h4 className="font-montserrat-bold mb-4 text-lg">
                 Resumen de inscripción
               </h4>
@@ -722,7 +757,7 @@ const Caroussel: FC<CarousselProps> = ({
     {
       title: "Finalizado",
       content: (
-        <div className="text-center">
+        <div className="text-center space-y-6">
           <h3 className="text-xl font-montserrat-bold mb-4 text-green-400">
             ¡Inscripción completada!
           </h3>
@@ -731,6 +766,15 @@ const Caroussel: FC<CarousselProps> = ({
           </p>
           <div className="mt-4 text-sm text-gray-300">
             <p>ID de transacción: {formData!.transactionId || "Pendiente"}</p>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={() => PDFGenerator.downloadPDF(formData!)}
+              className="bg-[#d53137] text-white px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors flex items-center gap-2 mx-auto"
+            >
+              📄 Descargar Comprobante
+            </button>
           </div>
         </div>
       ),
@@ -743,12 +787,29 @@ const Caroussel: FC<CarousselProps> = ({
     try {
       if (!validateFullForm()) {
         setIsSubmitting(false);
+        setIsLoading(false);
         return;
       }
 
       console.log("Formulario enviado:", formData!);
 
+      let pdfUrl = "";
+      try {
+        pdfUrl = await PDFGenerator.uploadAndDownloadPDF(formData!);
+        console.log("PDF subido a Supabase:", pdfUrl);
+
+        setFormData!((prev) => ({ ...prev, pdfUrl }));
+      } catch (pdfError) {
+        console.error("Error subiendo PDF:", pdfError);
+      }
+
       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      await FirestoreService.add("registrations", {
+        ...formData!,
+        pdfUrl,
+        createdAt: new Date().toISOString(),
+      });
 
       console.log("Inscripción completada exitosamente");
     } catch (error) {
