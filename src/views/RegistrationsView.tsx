@@ -58,7 +58,6 @@ const RegistrationsView: FC = () => {
       console.log("🔄 Verificando disponibilidad de comités...");
       const data = await FirestoreService.getAll<Committee>("committees");
 
-      // Filtrar comités con cupos disponibles
       const availableCommittees = data.filter(
         (committee) =>
           committee.seatsList &&
@@ -66,7 +65,6 @@ const RegistrationsView: FC = () => {
           committee.seatsList.some((seat) => seat.available)
       );
 
-      // Contar total de cupos disponibles
       const totalAvailableSeats = availableCommittees.reduce(
         (total, committee) => {
           return (
