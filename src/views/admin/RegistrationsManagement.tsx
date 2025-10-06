@@ -274,23 +274,22 @@ const RegistrationsManagement: FC = () => {
     <div className="p-12 font-montserrat-light w-full">
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
         <div className="flex flex-col items-start">
-          <h1 className="text-4xl font-montserrat-bold mb-4">
+          <h1 className="text-4xl font-montserrat-bold">
             Gestión de Inscripciones
           </h1>
+          <Link
+            to="/admin"
+            className="px-6 py-2 my-4 bg-glass border border-gray-600 rounded-lg text-[#f0f0f0] hover:border-[#d53137] hover:bg-gray-700 transition-colors flex items-center gap-2 font-medium"
+          >
+            <FaHome size={16} />
+            Panel Admin
+          </Link>
           <p className="text-gray-400">
             Total de inscripciones: {registrations.length}
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <Link
-            to="/admin"
-            className="px-6 py-2 bg-glass border border-gray-600 rounded-lg text-[#f0f0f0] hover:border-[#d53137] hover:bg-gray-700 transition-colors flex items-center gap-2 font-medium"
-          >
-            <FaHome size={16} />
-            Panel Admin
-          </Link>
-
           <input
             type="text"
             placeholder="Buscar"

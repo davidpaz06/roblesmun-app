@@ -16,10 +16,11 @@ import {
   FaSortAlphaDown,
   FaSortAlphaUp,
   FaClock,
-  FaSort,
+  FaHome,
 } from "react-icons/fa";
 import Loader from "../../components/Loader";
 import { FirestoreService } from "../../firebase/firestore";
+import { Link } from "react-router-dom";
 
 type SortOption = "newest" | "oldest" | "alphabetical" | "reverse-alphabetical";
 
@@ -206,12 +207,16 @@ const SponsorsManagement: FC = () => {
   return (
     <div className="p-12 font-montserrat-light w-full">
       <div className="p-0">
-        {/* Header con controles */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
           <div className="flex flex-col items-start">
-            <h1 className="text-4xl font-montserrat-bold mb-4">
-              Patrocinadores
-            </h1>
+            <h1 className="text-4xl font-montserrat-bold">Patrocinadores</h1>
+            <Link
+              to="/admin"
+              className="px-6 py-2 my-4 bg-glass border border-gray-600 rounded-lg text-[#f0f0f0] hover:border-[#d53137] hover:bg-gray-700 transition-colors flex items-center gap-2 font-medium"
+            >
+              <FaHome size={16} />
+              Panel Admin
+            </Link>
             <button
               onClick={() => setShowForm(!showForm)}
               className="bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#d53137] transition-colors"
@@ -221,7 +226,6 @@ const SponsorsManagement: FC = () => {
             </button>
           </div>
 
-          {/* Controles de ordenamiento refactorizados */}
           {!isLoading && sponsors.length > 0 && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <span className="text-sm text-gray-300 font-medium">

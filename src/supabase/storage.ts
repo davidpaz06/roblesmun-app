@@ -149,4 +149,28 @@ export class SupabaseStorage {
       return [];
     }
   }
+
+  static getPublicImageUrl(
+    fileName: string,
+    bucket: string = "general"
+  ): string {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
+
+    return data.publicUrl;
+  }
+
+  static async listFiles(bucket: string = "general"): Promise<FileObject[]> {
+    try {
+      const { data, error } = await supabase.storage.from(bucket).list();
+
+      if (error) {
+        throw new Error(`Error listing files: ${error.message}`);
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Error in listFiles:", error);
+      return [];
+    }
+  }
 }
