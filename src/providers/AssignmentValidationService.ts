@@ -1,5 +1,7 @@
 import { FirestoreService } from "../firebase/firestore";
 import { EmailService } from "./EmailService";
+import { AssignmentsPDFGenerator } from "../components/AssignmentsPDFGenerator";
+import { SupabaseStorage } from "../supabase/storage"; // ✅ Usar tu servicio existente
 import type { RegistrationForm } from "../interfaces/RegistrationForm";
 
 interface RegistrationWithId extends RegistrationForm {
@@ -8,6 +10,12 @@ interface RegistrationWithId extends RegistrationForm {
   status?: "pending" | "verified" | "rejected";
   assignedSeats?: string[];
   assignmentDate?: string;
+  assignmentPdfUrl?: string;
+  assignmentNotes?: string;
+  assignmentValidated?: boolean;
+  assignmentValidationDate?: string;
+  assignmentPercentage?: number;
+  isCompleteAssignment?: boolean;
 }
 
 interface ValidationResult {
@@ -107,7 +115,35 @@ export class AssignmentValidationService {
         };
       }
 
-      // Paso 2: Preparar datos de asignación
+      // Paso 2: Generar PDF de asignaciones
+      console.log("📄 Generando PDF de asignaciones...");
+      const assignmentPDFBlob = AssignmentsPDFGenerator.getAssignmentsPDFBlob(
+        registration,
+        assignedSeats
+      );
+
+      let assignmentPdfUrl = "";
+      try {
+        const timestamp = Date.now();
+        const institutionClean = registration.userInstitution
+          .replace(/[^a-zA-Z0-9]/g, "-")
+          .toLowerCase();
+        const fileName = `asignacion-${institutionClean}-${timestamp}.pdf`;
+
+        console.log("📄 Creando archivo PDF:", fileName);
+
+        const pdfFile = new File([assignmentPDFBlob], fileName, {
+          type: "application/pdf",
+        });
+
+        assignmentPdfUrl = await SupabaseStorage.uploadPDF(pdfFile);
+
+        console.log("✅ PDF de asignaciones subido:", assignmentPdfUrl);
+      } catch (uploadError) {
+        console.error("❌ Error subiendo PDF de asignaciones:", uploadError);
+      }
+
+      // Paso 4: Preparar datos de asignación
       const assignmentData = {
         assignedSeats: assignedSeats,
         assignmentDate: new Date().toISOString(),
@@ -115,15 +151,16 @@ export class AssignmentValidationService {
         assignmentValidated: true,
         assignmentValidationDate: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        // Agregar información de validación
-        validationWarnings: validationResult.warnings,
+        status: "verified" as const,
+        // ✅ AGREGAR: URL del PDF de asignaciones
+        assignmentPdfUrl: assignmentPdfUrl,
         assignmentPercentage: Math.round(
           (assignedSeats.length / registration.seats) * 100
         ),
         isCompleteAssignment: assignedSeats.length === registration.seats,
       };
 
-      // Paso 3: Guardar en Firestore
+      // Paso 5: Guardar en Firestore
       await FirestoreService.update(
         "registrations",
         registration.id,
@@ -132,17 +169,18 @@ export class AssignmentValidationService {
 
       console.log("✅ Asignación guardada en Firestore:", assignmentData);
 
-      // Paso 4: Enviar PDF por correo
       let emailSent = false;
       try {
         if (EmailService.isConfigured()) {
+          // ✅ Pasar el registro actualizado con el PDF URL
+          const updatedRegistration = { ...registration, ...assignmentData };
           await EmailService.sendSimpleNotification(
-            { ...registration, ...assignmentData },
+            updatedRegistration,
             assignedSeats,
             notes
           );
           emailSent = true;
-          console.log("✅ PDF enviado por correo exitosamente");
+          console.log("✅ PDF de asignaciones enviado por correo exitosamente");
         } else {
           console.warn("⚠️ Servicio de email no configurado - PDF no enviado");
         }
@@ -151,13 +189,15 @@ export class AssignmentValidationService {
         // El email falló, pero la asignación se guardó exitosamente
       }
 
-      // Paso 5: Log de auditoria
+      // Paso 7: Log de auditoria
       await this.logAssignmentAction(registration.id, {
         action: "assignment_created",
         assignedSeatsCount: assignedSeats.length,
         totalSeatsRequested: registration.seats,
         emailSent,
         validationWarnings: validationResult.warnings,
+        statusChanged: "verified",
+        assignmentPdfUrl: assignmentPdfUrl,
         timestamp: new Date().toISOString(),
       });
 
@@ -170,10 +210,13 @@ export class AssignmentValidationService {
       }
 
       if (emailSent) {
-        successMessage += " PDF enviado por correo electrónico.";
+        successMessage +=
+          " PDF de asignaciones enviado por correo electrónico.";
       } else {
-        successMessage += " (PDF no enviado por correo)";
+        successMessage += " (PDF de asignaciones no enviado por correo)";
       }
+
+      successMessage += " Estado cambiado a 'Verificado'.";
 
       return {
         success: true,
@@ -225,7 +268,7 @@ export class AssignmentValidationService {
   }
 
   /**
-   * Reenviar PDF por correo
+   * Reenviar PDF de asignación
    */
   static async resendAssignmentPDF(
     registration: RegistrationWithId

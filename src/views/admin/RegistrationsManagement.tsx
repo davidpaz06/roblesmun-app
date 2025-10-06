@@ -1,4 +1,4 @@
-import React, { useState, useEffect, type FC } from "react";
+import { useState, useEffect, type FC } from "react";
 import type { RegistrationForm } from "../../interfaces/RegistrationForm";
 import {
   FaEye,
@@ -18,7 +18,8 @@ import { FirestoreService } from "../../firebase/firestore";
 import RegistrationsManagementModal from "../../components/RegistrationsManagementModal";
 import AssignmentsModal from "../../components/AssignmentsModal";
 import { AssignmentsPDFGenerator } from "../../components/AssignmentsPDFGenerator";
-import { AssignmentValidationService } from "../../providers/AssignmentValidationService";
+import { Link } from "react-router-dom"; // Agregar este import
+import { FaHome } from "react-icons/fa"; // Agregar este import
 
 type SortOption =
   | "newest"
@@ -34,6 +35,13 @@ interface RegistrationWithId extends RegistrationForm {
   status?: "pending" | "verified" | "rejected";
   assignedSeats?: string[];
   assignmentDate?: string;
+  // ✅ AGREGAR: Propiedades para el PDF de asignaciones
+  assignmentPdfUrl?: string;
+  assignmentNotes?: string;
+  assignmentValidated?: boolean;
+  assignmentValidationDate?: string;
+  assignmentPercentage?: number;
+  isCompleteAssignment?: boolean;
 }
 
 const RegistrationsManagement: FC = () => {
@@ -200,46 +208,6 @@ const RegistrationsManagement: FC = () => {
     setShowAssignmentModal(false);
   };
 
-  const handleSaveAssignment = async (
-    assignedSeats: string[],
-    notes: string
-  ) => {
-    if (!selectedRegistration) return;
-
-    try {
-      // Usar el nuevo servicio de validación y procesamiento
-      const result = await AssignmentValidationService.processAssignment(
-        selectedRegistration,
-        assignedSeats,
-        notes
-      );
-
-      if (result.success) {
-        const assignmentData = {
-          assignedSeats: assignedSeats,
-          assignmentDate: new Date().toISOString(),
-          assignmentNotes: notes,
-          assignmentValidated: true,
-          assignmentValidationDate: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        setRegistrations((prev) =>
-          prev.map((reg) =>
-            reg.id === selectedRegistration.id
-              ? { ...reg, ...assignmentData }
-              : reg
-          )
-        );
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (error) {
-      console.error("Error saving assignment:", error);
-      throw error;
-    }
-  };
-
   const getStatusColor = (status?: string) => {
     switch (status) {
       case "verified":
@@ -304,7 +272,6 @@ const RegistrationsManagement: FC = () => {
 
   return (
     <div className="p-12 font-montserrat-light w-full">
-      {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
         <div className="flex flex-col items-start">
           <h1 className="text-4xl font-montserrat-bold mb-4">
@@ -316,6 +283,14 @@ const RegistrationsManagement: FC = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
+          <Link
+            to="/admin"
+            className="px-6 py-2 bg-glass border border-gray-600 rounded-lg text-[#f0f0f0] hover:border-[#d53137] hover:bg-gray-700 transition-colors flex items-center gap-2 font-medium"
+          >
+            <FaHome size={16} />
+            Panel Admin
+          </Link>
+
           <input
             type="text"
             placeholder="Buscar"
@@ -477,25 +452,22 @@ const RegistrationsManagement: FC = () => {
                   )}
               </div>
 
-              <div className="flex gap-1">
-                <button
-                  onClick={() => handleStatusUpdate(registration.id, "pending")}
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 font-montserrat-bold cursor-pointer p-2 rounded text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={registration.status === "pending"}
-                >
-                  Pendiente
-                </button>
-
-                <button
-                  onClick={() =>
-                    handleStatusUpdate(registration.id, "rejected")
-                  }
-                  className="flex-1 bg-[#d53137] hover:bg-[#b71c1c] font-montserrat-bold cursor-pointer p-2 rounded text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={registration.status === "rejected"}
-                >
-                  Rechazar
-                </button>
-              </div>
+              {!(
+                registration.assignedSeats &&
+                registration.assignedSeats.length > 0
+              ) && (
+                <div className="flex gap-1">
+                  <button
+                    onClick={() =>
+                      handleStatusUpdate(registration.id, "rejected")
+                    }
+                    className="flex-1 bg-[#d53137] hover:bg-[#b71c1c] font-montserrat-bold cursor-pointer p-2 rounded text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={registration.status === "rejected"}
+                  >
+                    Rechazar
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -548,7 +520,6 @@ const RegistrationsManagement: FC = () => {
         selectedRegistration={selectedRegistration}
         isOpen={showAssignmentModal}
         onClose={closeAssignmentModal}
-        onSaveAssignment={handleSaveAssignment}
       />
 
       <div className="mt-8 p-4 bg-glass rounded-lg">

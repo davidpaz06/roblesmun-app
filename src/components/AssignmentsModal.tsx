@@ -19,20 +19,24 @@ interface RegistrationWithId extends RegistrationForm {
   status?: "pending" | "verified" | "rejected";
   assignedSeats?: string[];
   assignmentDate?: string;
+  assignmentPdfUrl?: string;
+  assignmentNotes?: string;
+  assignmentValidated?: boolean;
+  assignmentValidationDate?: string;
+  assignmentPercentage?: number;
+  isCompleteAssignment?: boolean;
 }
 
 interface AssignmentsModalProps {
   selectedRegistration: RegistrationWithId | null;
   isOpen: boolean;
   onClose: () => void;
-  onSaveAssignment: (assignedSeats: string[], notes: string) => Promise<void>;
 }
 
 const AssignmentsModal: FC<AssignmentsModalProps> = ({
   selectedRegistration,
   isOpen,
   onClose,
-  onSaveAssignment,
 }) => {
   const [assignmentSeats, setAssignmentSeats] = useState<string[]>([]);
   const [assignmentNotes, setAssignmentNotes] = useState<string>("");
@@ -145,6 +149,7 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
 
     setIsProcessing(true);
     try {
+      // ✅ SOLO una ejecución del procesamiento
       const result = await AssignmentValidationService.processAssignment(
         selectedRegistration,
         assignmentSeats,
@@ -158,13 +163,11 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
       });
 
       if (result.success) {
-        // Llamar al callback original para actualizar la UI
-        await onSaveAssignment(assignmentSeats, assignmentNotes);
-
-        // Mostrar resultado exitoso
         alert(result.message);
+
+        handleClose();
+        window.location.reload();
       } else {
-        // Mostrar errores de validación
         alert(`Error: ${result.message}`);
       }
     } catch (error) {
@@ -206,10 +209,22 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
   };
 
   const handleGenerateAssignmentPDF = () => {
-    AssignmentsPDFGenerator.downloadAssignmentsPDF(
-      selectedRegistration,
-      assignmentSeats
-    );
+    // ✅ Solo permitir si ya hay asignación confirmada
+    if (
+      selectedRegistration.assignedSeats &&
+      selectedRegistration.assignedSeats.length > 0
+    ) {
+      AssignmentsPDFGenerator.downloadAssignmentsPDF(
+        selectedRegistration,
+        selectedRegistration.assignedSeats
+      );
+    } else {
+      // ✅ Si no hay asignación confirmada, generar con los cupos actuales (solo vista previa)
+      AssignmentsPDFGenerator.downloadAssignmentsPDF(
+        selectedRegistration,
+        assignmentSeats
+      );
+    }
   };
 
   const handleClose = () => {
@@ -583,26 +598,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
           </div>
         </div>
 
-        {/* Notas */}
-        <div className="mt-6 space-y-3">
-          <h3 className="text-lg font-montserrat-bold text-gray-300">
-            Notas de Asignación
-          </h3>
-          <textarea
-            value={assignmentNotes}
-            onChange={(e) => setAssignmentNotes(e.target.value)}
-            placeholder="Agregar notas sobre la asignación (opcional)..."
-            className="w-full h-24 p-3 bg-[#101010] border border-gray-600 rounded text-gray-300 text-sm resize-none focus:border-[#d53137] focus:ring-1 focus:ring-[#d53137] outline-none transition-colors"
-            maxLength={500}
-          />
-          <div className="text-right">
-            <span className="text-xs text-gray-500">
-              {assignmentNotes.length}/500 caracteres
-            </span>
-          </div>
-        </div>
-
-        {/* Status Indicator */}
         {assignmentSeats.length > 0 && (
           <div
             className={`mt-4 p-3 rounded-lg border ${
@@ -634,39 +629,72 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-gray-700">
-          <button
-            onClick={handleGenerateAssignmentPDF}
-            className="bg-blue-600 hover:bg-blue-700 cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 transition-colors text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={assignmentSeats.length === 0}
-            title={
-              assignmentSeats.length === 0
-                ? "Selecciona al menos un cupo para generar PDF"
-                : ""
-            }
-          >
-            <CiImport size={20} />
-            Generar PDF
-          </button>
+        <div className="flex flex-wrap gap-4 mt-6 pt-6 border-gray-700">
+          {!(
+            selectedRegistration.assignedSeats &&
+            selectedRegistration.assignedSeats.length > 0
+          ) && (
+            <button
+              onClick={handleGenerateAssignmentPDF}
+              className="bg-blue-600 hover:bg-blue-700 cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 transition-colors text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={assignmentSeats.length === 0}
+              title={
+                assignmentSeats.length === 0
+                  ? "Selecciona al menos un cupo para generar PDF de vista previa"
+                  : "Generar PDF de vista previa (no se guarda en servidor)"
+              }
+            >
+              <CiImport size={20} />
+              Vista previa PDF
+            </button>
+          )}
 
-          <button
-            onClick={handleProcessAssignment}
-            className="bg-green-600 hover:bg-green-700 cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 transition-colors text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isProcessing || validationErrors.length > 0}
-          >
-            {isProcessing ? (
-              <>
-                <FaSpinner className="animate-spin" size={20} />
-                Procesando...
-              </>
-            ) : (
-              <>
-                <CiCircleCheck size={20} />
-                Confirmar Asignación
-              </>
+          {selectedRegistration.status !== "rejected" && (
+            <button
+              onClick={handleProcessAssignment}
+              className="bg-green-600 hover:bg-green-700 cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 transition-colors text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isProcessing || validationErrors.length > 0}
+            >
+              {isProcessing ? (
+                <>
+                  <FaSpinner className="animate-spin" size={20} />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <CiCircleCheck size={20} />
+                  Confirmar Asignación
+                </>
+              )}
+            </button>
+          )}
+
+          {selectedRegistration.assignedSeats &&
+            selectedRegistration.assignedSeats.length > 0 && (
+              <button
+                onClick={() =>
+                  AssignmentsPDFGenerator.downloadAssignmentsPDF(
+                    selectedRegistration,
+                    selectedRegistration.assignedSeats
+                  )
+                }
+                className="bg-blue-600 hover:bg-blue-700 cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 transition-colors text-white font-medium"
+                title="Descargar PDF de asignación confirmada"
+              >
+                <CiImport size={20} />
+                Descargar PDF
+              </button>
             )}
-          </button>
+
+          {/* ✅ Resto de botones... */}
+          {selectedRegistration.status === "rejected" && (
+            <div className="bg-red-900/20 border border-red-600 rounded-lg px-6 py-3 flex items-center gap-2">
+              <FaTimes className="text-red-400" />
+              <span className="text-red-300 text-sm font-medium">
+                No se pueden asignar cupos a inscripciones rechazadas
+              </span>
+            </div>
+          )}
 
           {selectedRegistration.assignedSeats &&
             selectedRegistration.assignedSeats.length > 0 && (

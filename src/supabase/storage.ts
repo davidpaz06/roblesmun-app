@@ -20,7 +20,7 @@ export class SupabaseStorage {
         .substring(2)}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from("roblesmun-images")
         .upload(filePath, file, {
           cacheControl: "3600",

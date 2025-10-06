@@ -350,9 +350,7 @@ export class PDFGenerator {
       const pdf = this.generateRegistrationPDF(formData);
       const pdfBlob = pdf.output("blob");
 
-      // Nombre simplificado sin caracteres especiales
-      const timestamp = Date.now();
-      const fileName = `roblesmun-${timestamp}.pdf`;
+      const fileName = `solicitud-inscripcion-${formData.userInstitution}.pdf`;
 
       console.log("📄 Archivo:", fileName);
       console.log("📊 Tamaño:", pdfBlob.size, "bytes");
@@ -362,7 +360,6 @@ export class PDFGenerator {
       });
 
       console.log("📤 Subiendo directamente sin folder...");
-      // Upload directo sin parámetro de folder
       const publicUrl = await SupabaseStorage.uploadPDF(pdfFile);
 
       console.log("✅ Upload directo exitoso:", publicUrl);

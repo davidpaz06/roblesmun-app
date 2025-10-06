@@ -7,6 +7,13 @@ interface RegistrationWithId extends RegistrationForm {
   status?: "pending" | "verified" | "rejected";
   assignedSeats?: string[];
   assignmentDate?: string;
+  // ✅ AGREGAR: Propiedad para el PDF de asignaciones
+  assignmentPdfUrl?: string;
+  assignmentNotes?: string;
+  assignmentValidated?: boolean;
+  assignmentValidationDate?: string;
+  assignmentPercentage?: number;
+  isCompleteAssignment?: boolean;
 }
 
 export class EmailService {
@@ -46,10 +53,12 @@ export class EmailService {
           .map((seat, i) => `${i + 1}. ${seat}`)
           .join("\n"),
         notes: assignmentNotes || "",
-        pdf_url: registration.pdfUrl || "",
+        // ✅ CAMBIAR: Usar el PDF de asignaciones en lugar del de inscripción
+        pdf_url: registration.assignmentPdfUrl || "",
       };
 
       console.log("Enviando a:", templateParams.to_email);
+      console.log("📧 PDF URL:", templateParams.pdf_url);
       console.log("templateParams:", templateParams);
 
       await emailjs.send(
