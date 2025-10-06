@@ -71,7 +71,7 @@ const Header: FC = () => {
           <li className="h-full">
             <Link className="h-full flex items-center px-1" to="/">
               <img
-                src="src/assets/img/logo-white.png"
+                src="./assets/img/logo-white.png"
                 alt="Logo de Roblesmun"
                 className="h-9 w-auto"
               />

@@ -50,7 +50,7 @@ const Sidebar: FC = () => {
       >
         <div className="flex justify-end p-3 relative">
           <img
-            src="src/assets/img/logo-white.png"
+            src="./assets/img/logo-white.png"
             alt="Logo"
             className="h-12 w-auto absolute left-1/6 top-6 transform -translate-x-1/2"
           />
