@@ -102,8 +102,8 @@ const Home: FC = () => {
       <section className="w-full relative flex items-center justify-center text-[#f0f0f0] font-montserrat-light bg-delegation">
         <div className="absolute inset-0 bg-black/65"></div>
 
-        <div className="relative z-10 w-[90%] max-w-[1200px] py-8 text-center">
-          <h2 className="text-[3.5em] sm:text-[4.5em] font-montserrat-bold mb-8 transition-all duration-500 ease-in-out">
+        <div className="relative w-[90%] max-w-[1200px] py-8 text-center">
+          <h2 className="text-[2.75em] sm:text-[4.5em] font-montserrat-bold mb-8 transition-all duration-500 ease-in-out">
             ¿Qué es ROBLESMUN?
           </h2>
 
@@ -177,7 +177,7 @@ const Home: FC = () => {
       </section>
 
       <section className="w-[90%] my-4 flex flex-col justify-start text-lg sm:text-xl">
-        <h2 className="text-[3.5em] sm:text-[4.5em] font-montserrat-bold mb-8 transition-all duration-500 ease-in-out">
+        <h2 className="text-[2.75em] sm:text-[4.5em] font-montserrat-bold mb-8 transition-all duration-500 ease-in-out">
           DIRECTIVA
         </h2>
 
