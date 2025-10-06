@@ -39,13 +39,11 @@ const initialBoard: BoardMember[] = [
 
 const Home: FC = () => {
   const [board, setBoard] = useState<BoardMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadBoardImages = async () => {
-      setIsLoading(true);
+    const loadBoardImages = () => {
       try {
-        // Generar URLs públicas desde Supabase
+        // ✅ Generar URLs y setear el board inmediatamente (sin esperar)
         const boardWithImages = initialBoard.map((person) => ({
           ...person,
           img: person.fileName
@@ -54,67 +52,23 @@ const Home: FC = () => {
         }));
 
         setBoard(boardWithImages);
-
-        // ✅ Usar callback para tracking de progreso
-        let loadedCount = 0;
-        const totalImages = boardWithImages.filter(
-          (person) => person.img
-        ).length;
-
-        await Promise.all(
-          boardWithImages.map((person) =>
-            person.img
-              ? preloadImage(person.img, () => {
-                  loadedCount++;
-                  console.log(
-                    `Imágenes cargadas: ${loadedCount}/${totalImages}`
-                  );
-                })
-              : Promise.resolve()
-          )
-        );
-
-        console.log(`✅ Todas las imágenes cargadas: ${totalImages}`);
+        console.log("✅ URLs de imágenes generadas desde Supabase");
       } catch (error) {
         console.error("Error loading board images:", error);
+        // ✅ Fallback a imágenes locales si falla
         setBoard(
           initialBoard.map((person) => ({
             ...person,
             img: `src/assets/img/${person.fileName}`,
           }))
         );
-      } finally {
-        setIsLoading(false);
       }
     };
 
     loadBoardImages();
   }, []);
 
-  // ✅ Función para precargar imágenes con callback
-  const preloadImage = (
-    src: string,
-    onLoadCallback?: () => void
-  ): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        onLoadCallback?.(); // Ejecutar callback si existe
-        resolve();
-      };
-      img.onerror = reject;
-      img.src = src;
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader message="Cargando directiva..." />
-      </div>
-    );
-  }
-
+  // ✅ La página se renderiza siempre, sin loader global
   return (
     <>
       <section className="text-[#f0f0f0] w-full min-h-[100vh] bg-home">
@@ -159,11 +113,12 @@ const Home: FC = () => {
         </p>
 
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-16">
-          {board.map((person, idx) => (
+          {/* ✅ Renderizar siempre, mostrar datos iniciales si board está vacío */}
+          {(board.length > 0 ? board : initialBoard).map((person, idx) => (
             <div className="flex flex-col font-montserrat-light" key={idx}>
               <div className="rounded-xl overflow-hidden flex flex-col items-center">
                 <BoardMemberImage
-                  src={person.img}
+                  src={board.length > 0 ? person.img : ""}
                   alt={person.name}
                   className="h-[320px] w-auto object-cover rounded-xl shadow-lg mb-8 scale-125"
                 />
@@ -190,28 +145,32 @@ const BoardMemberImage: FC<{
 
   return (
     <div className="relative">
-      {!imageLoaded && !imageError && (
+      {src && !imageLoaded && !imageError && (
         <div className="absolute inset-0 flex items-center justify-center bg-glass rounded-xl">
           <Loader size="sm" message="" />
         </div>
       )}
 
-      <img
-        src={src}
-        alt={alt}
-        className={`${className} ${
-          imageLoaded ? "opacity-100" : "opacity-0"
-        } transition-opacity duration-300`}
-        onLoad={() => setImageLoaded(true)}
-        onError={() => {
-          setImageError(true);
-          console.warn(`Failed to load image: ${src}`);
-        }}
-      />
+      {src && (
+        <img
+          src={src}
+          alt={alt}
+          className={`${className} ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          } transition-opacity duration-300`}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => {
+            setImageError(true);
+            console.warn(`Failed to load image: ${src}`);
+          }}
+        />
+      )}
 
-      {imageError && (
+      {(!src || imageError) && (
         <div className="h-[320px] w-full bg-glass rounded-xl flex items-center justify-center mb-8">
-          <span className="text-gray-400 text-sm">Imagen no disponible</span>
+          <span className="text-gray-400 text-sm">
+            {!src ? "Cargando imagen..." : "Imagen no disponible"}
+          </span>
         </div>
       )}
     </div>
