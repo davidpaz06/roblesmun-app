@@ -30,6 +30,8 @@ export class PDFGenerator {
     pdf.setFont("helvetica", "bold");
     pdf.text("XVII ROBLESMUN", pageWidth / 2, 16, { align: "center" });
 
+    yPosition += sectionSpacing;
+
     // Subtítulo
     pdf.setTextColor(...darkGray);
     pdf.setFontSize(16);
@@ -150,7 +152,6 @@ export class PDFGenerator {
       pdf.text("Cupos Principales Seleccionados", 20, yPosition);
       yPosition += lineHeight + 2;
 
-      // Fondo gris para la lista
       pdf.setFillColor(248, 248, 248);
       const listHeight = formData.seatsRequested.length * 6 + 10;
       pdf.rect(20, yPosition - 2, pageWidth - 40, listHeight, "F");
@@ -169,7 +170,6 @@ export class PDFGenerator {
 
     // === CUPOS DE RESPALDO ===
     if (formData.requiresBackup && formData.backupSeatsRequested.length > 0) {
-      // Verificar si necesitamos una nueva página
       if (yPosition > pageHeight - 60) {
         pdf.addPage();
         yPosition = 30;
@@ -181,7 +181,6 @@ export class PDFGenerator {
       pdf.text("Cupos de Respaldo Seleccionados", 20, yPosition);
       yPosition += lineHeight + 2;
 
-      // Fondo naranja claro para respaldos
       pdf.setFillColor(255, 248, 220);
       const backupListHeight = formData.backupSeatsRequested.length * 6 + 10;
       pdf.rect(20, yPosition - 2, pageWidth - 40, backupListHeight, "F");
@@ -338,9 +337,6 @@ export class PDFGenerator {
     return pdf.output("blob");
   }
 
-  /**
-   * Sube el PDF a Supabase y retorna la URL pública
-   */
   static async uploadPDFToSupabase(
     formData: RegistrationForm
   ): Promise<string> {
@@ -370,9 +366,6 @@ export class PDFGenerator {
     }
   }
 
-  /**
-   * Sube el PDF a Supabase Y descarga localmente
-   */
   static async uploadAndDownloadPDF(
     formData: RegistrationForm
   ): Promise<string> {

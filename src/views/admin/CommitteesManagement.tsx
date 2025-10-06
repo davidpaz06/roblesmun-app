@@ -4,6 +4,7 @@ import {
   type FC,
   type ChangeEvent,
   type FormEvent,
+  type ReactElement, // ✅ Agregar esta importación
 } from "react";
 import type { Committee } from "../../interfaces/Committee";
 import {
@@ -303,7 +304,7 @@ const CommitteesManagement: FC = () => {
       const committeeData: CommitteeWithId = {
         ...formData,
         img: imageUrl,
-        seats: formData.seatsList.length, // Actualizar conteo basado en lista
+        seats: formData.seatsList.length,
         legalFramework:
           formData.legalFramework?.filter((link) => link.trim()) || [],
       };
@@ -383,7 +384,7 @@ const CommitteesManagement: FC = () => {
   const sortOptions: Array<{
     value: SortOption;
     label: string;
-    icon: JSX.Element;
+    icon: ReactElement; // ✅ Cambiar JSX.Element por ReactElement
   }> = [
     { value: "newest", label: "Recientes", icon: <FaClock /> },
     { value: "oldest", label: "Antiguos", icon: <FaClock /> },
@@ -631,6 +632,7 @@ const CommitteesManagement: FC = () => {
                       }}
                     />
                     <button
+                      aria-label="Agregar cupo"
                       type="button"
                       onClick={handleAddSeat}
                       className="bg-[#d53137] text-white px-3 py-2 rounded hover:bg-[#b71c1c] transition-colors"
@@ -743,10 +745,8 @@ const CommitteesManagement: FC = () => {
         </div>
       )}
 
-      {/* Loading */}
       {isLoading && <Loader message="Cargando comités..." />}
 
-      {/* Committees Grid */}
       {!isLoading && (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCommittees.map((committee) => (
@@ -761,7 +761,7 @@ const CommitteesManagement: FC = () => {
                   className="max-w-full max-h-full object-contain"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
-                      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+                      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA9TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
                   }}
                 />
               </div>
@@ -919,7 +919,6 @@ const CommitteesManagement: FC = () => {
   );
 };
 
-// Modal de detalles del comité
 const CommitteeDetailModal: FC<{
   committee: CommitteeWithId;
   onClose: () => void;
@@ -931,6 +930,7 @@ const CommitteeDetailModal: FC<{
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-2xl font-montserrat-bold">{committee.name}</h2>
             <button
+              aria-label="Cerrar"
               onClick={onClose}
               className="text-gray-400 hover:text-white transition-colors"
             >

@@ -22,6 +22,7 @@ import Loader from "../../components/Loader";
 import { FirestoreService } from "../../firebase/firestore";
 import { SupabaseStorage } from "../../supabase/storage";
 import { Link } from "react-router-dom";
+import { type ReactElement } from "react";
 
 type SortOption = "newest" | "oldest" | "alphabetical" | "reverse-alphabetical";
 
@@ -280,7 +281,7 @@ const SponsorsManagement: FC = () => {
   const sortOptions: Array<{
     value: SortOption;
     label: string;
-    icon: JSX.Element;
+    icon: ReactElement; // ✅ Cambiar JSX.Element por ReactElement
   }> = [
     { value: "newest", label: "Recientes", icon: <FaClock /> },
     { value: "oldest", label: "Antiguos", icon: <FaClock /> },
@@ -507,7 +508,7 @@ const SponsorsManagement: FC = () => {
                       className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
-                          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+                          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA9TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
                       }}
                     />
                   </div>

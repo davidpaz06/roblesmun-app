@@ -142,7 +142,7 @@ const CommitteesView: FC = () => {
               <div className="grid grid-cols-1 my-8 md:grid-cols-2 gap-8">
                 {committeesInfo.map((committee) => (
                   <div
-                    key={committee.id || committee.name}
+                    key={committee.name}
                     className={`bg-glass p-2 rounded-lg overflow-hidden shadow-lg cursor-pointer transition-transform hover:scale-105 hover:border-[#d53137] border border-transparent`}
                     onClick={() => setSelectedCommittee(committee)}
                   >

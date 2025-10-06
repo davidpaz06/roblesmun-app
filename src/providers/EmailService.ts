@@ -7,7 +7,6 @@ interface RegistrationWithId extends RegistrationForm {
   status?: "pending" | "verified" | "rejected";
   assignedSeats?: string[];
   assignmentDate?: string;
-  // ✅ AGREGAR: Propiedad para el PDF de asignaciones
   assignmentPdfUrl?: string;
   assignmentNotes?: string;
   assignmentValidated?: boolean;
@@ -23,9 +22,6 @@ export class EmailService {
     userId: import.meta.env.VITE_EMAILJS_USER_ID || "user_xxxxxxx",
   };
 
-  /**
-   * Enviar notificación de asignación usando EmailJS
-   */
   static async sendAssignmentPDF(
     registration: RegistrationWithId,
     assignedSeats: string[],
@@ -42,7 +38,7 @@ export class EmailService {
       const templateParams = {
         to_email: registration.userEmail,
         to_name: `${registration.userFirstName} ${registration.userLastName}`,
-        from_name: "ROBLESMUN 2024",
+        from_name: "XVII ROBLESMUN",
         subject: `Asignación de Cupos - ${registration.userInstitution}`,
         institution: registration.userInstitution,
         assigned_count: assignedSeats.length.toString(),
@@ -53,7 +49,6 @@ export class EmailService {
           .map((seat, i) => `${i + 1}. ${seat}`)
           .join("\n"),
         notes: assignmentNotes || "",
-        // ✅ CAMBIAR: Usar el PDF de asignaciones en lugar del de inscripción
         pdf_url: registration.assignmentPdfUrl || "",
       };
 

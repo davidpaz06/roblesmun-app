@@ -185,7 +185,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
     }
   };
 
-  // Función para reenviar PDF
   const handleResendPDF = async () => {
     if (!selectedRegistration) return;
 
@@ -474,8 +473,8 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
                       }
                     }}
                     role="checkbox"
-                    aria-checked={isSelected}
-                    aria-disabled={!canSelect && !isSelected}
+                    aria-checked={isSelected ? "true" : "false"}
+                    aria-disabled={!canSelect && !isSelected ? "true" : "false"}
                     aria-label={`${
                       isSelected ? "Deseleccionar" : "Seleccionar"
                     } cupo: ${seat}`}
@@ -522,7 +521,7 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
                     {isSelected && (
                       <FaCheck
                         className="text-green-400 text-xs flex-shrink-0"
-                        aria-hidden="true" // ✅ Icono decorativo
+                        aria-hidden="true"
                       />
                     )}
                     {!canSelect && !isSelected && (
@@ -672,12 +671,15 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
           {selectedRegistration.assignedSeats &&
             selectedRegistration.assignedSeats.length > 0 && (
               <button
-                onClick={() =>
-                  AssignmentsPDFGenerator.downloadAssignmentsPDF(
-                    selectedRegistration,
-                    selectedRegistration.assignedSeats
-                  )
-                }
+                onClick={() => {
+                  const assignedSeats = selectedRegistration.assignedSeats;
+                  if (assignedSeats && assignedSeats.length > 0) {
+                    AssignmentsPDFGenerator.downloadAssignmentsPDF(
+                      selectedRegistration,
+                      assignedSeats
+                    );
+                  }
+                }}
                 className="bg-blue-600 hover:bg-blue-700 cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 transition-colors text-white font-medium"
                 title="Descargar PDF de asignación confirmada"
               >
@@ -686,7 +688,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
               </button>
             )}
 
-          {/* ✅ Resto de botones... */}
           {selectedRegistration.status === "rejected" && (
             <div className="bg-red-900/20 border border-red-600 rounded-lg px-6 py-3 flex items-center gap-2">
               <FaTimes className="text-red-400" />

@@ -12,11 +12,11 @@ const Loader: FC<LoaderProps> = ({ size = "md", message }) => {
     lg: "w-16 h-16",
   };
 
-  const dotSizes = {
-    sm: "w-2 h-2",
-    md: "w-3 h-3",
-    lg: "w-4 h-4",
-  };
+  // const dotSizes = {
+  //   sm: "w-2 h-2",
+  //   md: "w-3 h-3",
+  //   lg: "w-4 h-4",
+  // };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[200px] font-montserrat-light">
