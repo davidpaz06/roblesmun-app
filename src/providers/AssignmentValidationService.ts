@@ -1,8 +1,9 @@
 import { FirestoreService } from "../firebase/firestore";
 import { EmailService } from "./EmailService";
 import { AssignmentsPDFGenerator } from "../components/AssignmentsPDFGenerator";
-import { SupabaseStorage } from "../supabase/storage"; // ✅ Usar tu servicio existente
+import { SupabaseStorage } from "../supabase/storage";
 import type { RegistrationForm } from "../interfaces/RegistrationForm";
+import type { Committee } from "../interfaces/Committee";
 
 interface RegistrationWithId extends RegistrationForm {
   id: string;
@@ -87,6 +88,110 @@ export class AssignmentValidationService {
   }
 
   /**
+   * ✅ NUEVO: Actualizar disponibilidad de cupos en comités
+   */
+  private static async updateCommitteeSeatsAvailability(
+    assignedSeats: string[],
+    makeUnavailable: boolean = true
+  ): Promise<void> {
+    try {
+      console.log(
+        `🔄 ${makeUnavailable ? "Marcando como no disponibles" : "Liberando"} ${
+          assignedSeats.length
+        } cupos...`
+      );
+
+      // Obtener todos los comités
+      const committees = await FirestoreService.getAll<
+        Committee & { id?: string }
+      >("committees");
+
+      // Agrupar cupos por comité
+      const seatsByCommittee = new Map<string, string[]>();
+
+      assignedSeats.forEach((assignedSeat) => {
+        // Formato: "Nombre del Comité - Nombre del Cupo"
+        const [committeeName, seatName] = assignedSeat.split(" - ");
+
+        if (committeeName && seatName) {
+          if (!seatsByCommittee.has(committeeName)) {
+            seatsByCommittee.set(committeeName, []);
+          }
+          seatsByCommittee.get(committeeName)?.push(seatName.trim());
+        }
+      });
+
+      // Actualizar cada comité
+      const updatePromises = Array.from(seatsByCommittee.entries()).map(
+        async ([committeeName, seatsToUpdate]) => {
+          // Encontrar el comité por nombre
+          const committee = committees.find((c) => c.name === committeeName);
+
+          if (!committee || !committee.id) {
+            console.warn(`⚠️ Comité no encontrado: ${committeeName}`);
+            return;
+          }
+
+          // Actualizar la disponibilidad de los cupos
+          const updatedSeatsList = committee.seatsList.map((seat) => {
+            if (seatsToUpdate.includes(seat.name)) {
+              console.log(
+                `${makeUnavailable ? "❌" : "✅"} ${committeeName} - ${
+                  seat.name
+                }: ${seat.available} → ${!makeUnavailable}`
+              );
+              return {
+                ...seat,
+                available: !makeUnavailable, // Si makeUnavailable=true, available=false
+              };
+            }
+            return seat;
+          });
+
+          // Actualizar en Firestore
+          await FirestoreService.update("committees", committee.id, {
+            seatsList: updatedSeatsList,
+            updatedAt: new Date().toISOString(),
+          });
+
+          console.log(
+            `✅ Comité actualizado: ${committeeName} (${seatsToUpdate.length} cupos)`
+          );
+        }
+      );
+
+      await Promise.all(updatePromises);
+
+      console.log(
+        `✅ ${
+          makeUnavailable
+            ? "Cupos marcados como no disponibles"
+            : "Cupos liberados"
+        } exitosamente`
+      );
+    } catch (error) {
+      console.error(
+        `❌ Error ${
+          makeUnavailable
+            ? "marcando cupos como no disponibles"
+            : "liberando cupos"
+        }:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * ✅ NUEVO: Liberar cupos previamente asignados
+   */
+  private static async releaseCommitteeSeats(
+    assignedSeats: string[]
+  ): Promise<void> {
+    return this.updateCommitteeSeatsAvailability(assignedSeats, false);
+  }
+
+  /**
    * Procesar y guardar asignación con validación y envío de email
    */
   static async processAssignment(
@@ -113,6 +218,17 @@ export class AssignmentValidationService {
           validationResult,
           emailSent: false,
         };
+      }
+
+      // ✅ Paso 1.5: Si ya había cupos asignados previamente, liberarlos
+      if (registration.assignedSeats && registration.assignedSeats.length > 0) {
+        console.log("🔄 Liberando cupos previamente asignados...");
+        await this.releaseCommitteeSeats(registration.assignedSeats);
+      }
+
+      // ✅ Paso 1.6: Marcar nuevos cupos como no disponibles
+      if (assignedSeats.length > 0) {
+        await this.updateCommitteeSeatsAvailability(assignedSeats, true);
       }
 
       // Paso 2: Generar PDF de asignaciones
@@ -152,7 +268,6 @@ export class AssignmentValidationService {
         assignmentValidationDate: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         status: "verified" as const,
-        // ✅ AGREGAR: URL del PDF de asignaciones
         assignmentPdfUrl: assignmentPdfUrl,
         assignmentPercentage: Math.round(
           (assignedSeats.length / registration.seats) * 100
@@ -172,7 +287,6 @@ export class AssignmentValidationService {
       let emailSent = false;
       try {
         if (EmailService.isConfigured()) {
-          // ✅ Pasar el registro actualizado con el PDF URL
           const updatedRegistration = { ...registration, ...assignmentData };
           await EmailService.sendSimpleNotification(
             updatedRegistration,
@@ -186,7 +300,6 @@ export class AssignmentValidationService {
         }
       } catch (emailError) {
         console.error("❌ Error enviando email:", emailError);
-        // El email falló, pero la asignación se guardó exitosamente
       }
 
       // Paso 7: Log de auditoria
@@ -198,10 +311,11 @@ export class AssignmentValidationService {
         validationWarnings: validationResult.warnings,
         statusChanged: "verified",
         assignmentPdfUrl: assignmentPdfUrl,
+        seatsUpdatedInCommittees: assignedSeats, // ✅ Log de cupos actualizados
         timestamp: new Date().toISOString(),
       });
 
-      let successMessage = `Asignación procesada exitosamente. ${assignedSeats.length} cupos asignados.`;
+      let successMessage = `Asignación procesada exitosamente. ${assignedSeats.length} cupos asignados y marcados como no disponibles.`;
 
       if (validationResult.warnings.length > 0) {
         successMessage += ` Advertencias: ${validationResult.warnings.join(
@@ -227,11 +341,22 @@ export class AssignmentValidationService {
     } catch (error) {
       console.error("❌ Error procesando asignación:", error);
 
+      // ✅ En caso de error, intentar revertir cambios en cupos
+      try {
+        if (assignedSeats.length > 0) {
+          console.log("🔄 Revirtiendo cambios en cupos debido al error...");
+          await this.releaseCommitteeSeats(assignedSeats);
+        }
+      } catch (revertError) {
+        console.error("❌ Error revirtiendo cambios en cupos:", revertError);
+      }
+
       // Log del error
       try {
         await this.logAssignmentAction(registration.id, {
           action: "assignment_error",
           error: error instanceof Error ? error.message : "Error desconocido",
+          attemptedSeats: assignedSeats,
           timestamp: new Date().toISOString(),
         });
       } catch (logError) {
@@ -311,6 +436,62 @@ export class AssignmentValidationService {
       return {
         success: false,
         message: `Error reenviando PDF: ${
+          error instanceof Error ? error.message : "Error desconocido"
+        }`,
+      };
+    }
+  }
+
+  /**
+   * ✅ NUEVO: Función para cancelar asignación y liberar cupos
+   */
+  static async cancelAssignment(
+    registration: RegistrationWithId
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (
+        !registration.assignedSeats ||
+        registration.assignedSeats.length === 0
+      ) {
+        return {
+          success: false,
+          message: "No hay cupos asignados para cancelar",
+        };
+      }
+
+      // Liberar cupos en comités
+      await this.releaseCommitteeSeats(registration.assignedSeats);
+
+      // Actualizar registro
+      await FirestoreService.update("registrations", registration.id, {
+        assignedSeats: [],
+        assignmentDate: null,
+        assignmentNotes: "",
+        assignmentValidated: false,
+        assignmentValidationDate: null,
+        assignmentPdfUrl: "",
+        assignmentPercentage: 0,
+        isCompleteAssignment: false,
+        status: "pending" as const,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Log de cancelación
+      await this.logAssignmentAction(registration.id, {
+        action: "assignment_cancelled",
+        releasedSeats: registration.assignedSeats,
+        timestamp: new Date().toISOString(),
+      });
+
+      return {
+        success: true,
+        message: `Asignación cancelada exitosamente. ${registration.assignedSeats.length} cupos liberados.`,
+      };
+    } catch (error) {
+      console.error("Error cancelando asignación:", error);
+      return {
+        success: false,
+        message: `Error cancelando asignación: ${
           error instanceof Error ? error.message : "Error desconocido"
         }`,
       };

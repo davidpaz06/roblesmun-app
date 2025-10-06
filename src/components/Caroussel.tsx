@@ -1,13 +1,12 @@
-import { type FC, useRef, useState } from "react";
+import { type FC, useRef, useState, useEffect } from "react";
 import { z } from "zod";
-import { committees } from "../config/committees";
 import { paymentInformation } from "../config/paymentInfo";
 import type { RegistrationForm } from "../interfaces/RegistrationForm";
+import type { Committee } from "../interfaces/Committee";
 import { FaCheck } from "react-icons/fa6";
 import Loader from "./Loader";
 import { PDFGenerator } from "./PDFGenerator";
 import { FirestoreService } from "../firebase/firestore";
-// import { FirestoreService } from "../firebase/firestore";
 
 const step1Schema = z.object({
   seats: z
@@ -89,7 +88,42 @@ const Caroussel: FC<CarousselProps> = ({
     [isSubmitting, setIsSubmitting] = useState<boolean>(false),
     [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // ✅ Estados para comités desde Firestore
+  const [committees, setCommittees] = useState<Committee[]>([]);
+  const [committeesLoading, setCommitteesLoading] = useState<boolean>(true);
+  const [committeesError, setCommitteesError] = useState<string>("");
+
   const rate = useRef(180);
+
+  // ✅ Función para cargar comités desde Firestore
+  const fetchCommittees = async () => {
+    setCommitteesLoading(true);
+    setCommitteesError("");
+    try {
+      console.log("🔄 Cargando comités desde Firestore...");
+      const data = await FirestoreService.getAll<Committee>("committees");
+
+      // Filtrar solo comités con cupos disponibles
+      const availableCommittees = data.filter(
+        (committee) => committee.seatsList && committee.seatsList.length > 0
+      );
+
+      setCommittees(availableCommittees);
+      console.log("✅ Comités cargados:", availableCommittees.length);
+    } catch (error) {
+      console.error("❌ Error cargando comités:", error);
+      setCommitteesError(
+        "Error cargando los comités. Por favor, recarga la página."
+      );
+    } finally {
+      setCommitteesLoading(false);
+    }
+  };
+
+  // ✅ Cargar comités al montar el componente
+  useEffect(() => {
+    fetchCommittees();
+  }, []);
 
   const validateCurrentStep = (): boolean => {
     try {
@@ -321,7 +355,6 @@ const Caroussel: FC<CarousselProps> = ({
               onChange={(e) => handleBackupToggle(e.target.checked)}
               className="w-4 h-4 text-blue-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-blue-500"
             />
-
             <p>Cupos de respaldo</p>
           </label>
 
@@ -337,137 +370,172 @@ const Caroussel: FC<CarousselProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[400px] overflow-y-auto">
-            {committees.map((committee) => (
-              <div key={committee.name} className="bg-glass/50 p-2 rounded-lg">
-                <img
-                  src={committee.img}
-                  alt={committee.name}
-                  className="w-full h-48 object-contain mb-2"
-                />
-                <h4 className="font-montserrat-bold mb-2 text-center min-h-[40px] flex items-center justify-center">
-                  {committee.name}
-                </h4>
+          {committeesError && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded mb-4 text-center">
+              {committeesError}
+              <button
+                onClick={fetchCommittees}
+                className="ml-2 underline hover:no-underline"
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
 
-                <div className="text-center">
-                  <span className="text-sm text-gray-300">
-                    Cupos disponibles:
-                    {
-                      committee.seatsList.filter(
-                        (seat) =>
-                          seat.available &&
-                          !formData!.seatsRequested.includes(
-                            `${committee.name} - ${seat.name}`
-                          ) &&
-                          !formData!.backupSeatsRequested.includes(
-                            `${committee.name} - ${seat.name}`
-                          )
-                      ).length
-                    }
-                  </span>
-                </div>
+          {committeesLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader message="Cargando comités..." />
+            </div>
+          ) : committees.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p className="text-lg mb-4">No hay comités disponibles</p>
+              <button
+                onClick={fetchCommittees}
+                className="bg-[#d53137] text-white px-4 py-2 rounded hover:bg-[#b71c1c] transition-colors"
+              >
+                Recargar comités
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[400px] overflow-y-auto">
+              {committees.map((committee) => (
+                <div
+                  key={committee.name}
+                  className="bg-glass/50 p-2 rounded-lg"
+                >
+                  <img
+                    src={committee.img}
+                    alt={committee.name}
+                    className="w-full h-48 object-contain mb-2"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+                    }}
+                  />
+                  <h4 className="font-montserrat-bold mb-2 text-center min-h-[40px] flex items-center justify-center">
+                    {committee.name}
+                  </h4>
 
-                <div className="grid grid-cols-2 space-y-2 max-h-[800px] overflow-y-auto">
-                  {committee.seatsList.map((seat, index) => {
-                    const uniqueSeat = `${committee.name} - ${seat.name}`;
-                    const isSelected =
-                      formData!.seatsRequested.includes(uniqueSeat);
-                    const isBackupSelected =
-                      formData!.backupSeatsRequested.includes(uniqueSeat);
+                  <div className="text-center">
+                    <span className="text-sm text-gray-300">
+                      Cupos disponibles:
+                      {
+                        committee.seatsList.filter(
+                          (seat) =>
+                            seat.available &&
+                            !formData!.seatsRequested.includes(
+                              `${committee.name} - ${seat.name}`
+                            ) &&
+                            !formData!.backupSeatsRequested.includes(
+                              `${committee.name} - ${seat.name}`
+                            )
+                        ).length
+                      }
+                    </span>
+                  </div>
 
-                    return (
-                      <div
-                        key={`${committee.name}-${seat.name}-${index}`}
-                        className="space-y-1"
-                      >
-                        <label
-                          className={`flex items-center gap-2 py-1 text-sm cursor-pointer hover:bg-black/20 p-1 rounded transition-colors ${
-                            !seat.available || isBackupSelected
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
+                  <div className="grid grid-cols-2 space-y-2 max-h-[800px] overflow-y-auto">
+                    {committee.seatsList.map((seat, index) => {
+                      const uniqueSeat = `${committee.name} - ${seat.name}`;
+                      const isSelected =
+                        formData!.seatsRequested.includes(uniqueSeat);
+                      const isBackupSelected =
+                        formData!.backupSeatsRequested.includes(uniqueSeat);
+
+                      return (
+                        <div
+                          key={`${committee.name}-${seat.name}-${index}`}
+                          className="space-y-1"
                         >
-                          <input
-                            type="checkbox"
-                            name={`${committee.name}-seats`}
-                            value={uniqueSeat}
-                            checked={isSelected}
-                            disabled={!seat.available || isBackupSelected}
-                            onChange={(e) =>
-                              handleSeatSelection(
-                                committee.name,
-                                seat.name,
-                                e.target.checked
-                              )
-                            }
-                            className="w-3 h-3 text-blue-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-gray-400 focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                          <span
-                            className={`font-montserrat-light transition-all duration-200 ${
-                              !seat.available
-                                ? "text-gray-600 line-through"
-                                : isSelected
-                                ? "text-green-400 font-montserrat-bold"
-                                : "text-[#f0f0f0]"
-                            }`}
-                          >
-                            {seat.name}
-                            {!seat.available && (
-                              <span className="ml-1 text-xs text-red-400">
-                                (No disponible)
-                              </span>
-                            )}
-                          </span>
-                        </label>
-
-                        {formData!.requiresBackup && (
                           <label
-                            className={`flex items-center gap-2 py-1 text-xs cursor-pointer hover:bg-black/20 p-1 rounded transition-colors ml-4 ${
-                              (!seat.available || isSelected) &&
-                              !isBackupSelected
+                            className={`flex items-center gap-2 py-1 text-sm cursor-pointer hover:bg-black/20 p-1 rounded transition-colors ${
+                              !seat.available || isBackupSelected
                                 ? "opacity-50 cursor-not-allowed"
                                 : ""
                             }`}
                           >
                             <input
                               type="checkbox"
-                              name={`${committee.name}-backup-seats`}
+                              name={`${committee.name}-seats`}
                               value={uniqueSeat}
-                              checked={isBackupSelected}
-                              disabled={
-                                ((!seat.available || isSelected) &&
-                                  !isBackupSelected) ||
-                                (formData!.backupSeatsRequested.length >=
-                                  formData!.seats * 2 &&
-                                  !isBackupSelected)
-                              }
+                              checked={isSelected}
+                              disabled={!seat.available || isBackupSelected}
                               onChange={(e) =>
-                                handleBackupSeatSelection(
+                                handleSeatSelection(
                                   committee.name,
                                   seat.name,
                                   e.target.checked
                                 )
                               }
-                              className="w-3 h-3 text-orange-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-orange-400 focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-3 h-3 text-blue-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-gray-400 focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                             <span
                               className={`font-montserrat-light transition-all duration-200 ${
-                                isBackupSelected
-                                  ? "text-orange-400 font-montserrat-bold"
-                                  : "text-gray-400"
+                                !seat.available
+                                  ? "text-gray-600 line-through"
+                                  : isSelected
+                                  ? "text-green-400 font-montserrat-bold"
+                                  : "text-[#f0f0f0]"
                               }`}
                             >
-                              {seat.name} (respaldo)
+                              {seat.name}
+                              {!seat.available && (
+                                <span className="ml-1 text-xs text-red-400">
+                                  (No disponible)
+                                </span>
+                              )}
                             </span>
                           </label>
-                        )}
-                      </div>
-                    );
-                  })}
+
+                          {formData!.requiresBackup && (
+                            <label
+                              className={`flex items-center gap-2 py-1 text-xs cursor-pointer hover:bg-black/20 p-1 rounded transition-colors ml-4 ${
+                                (!seat.available || isSelected) &&
+                                !isBackupSelected
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : ""
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                name={`${committee.name}-backup-seats`}
+                                value={uniqueSeat}
+                                checked={isBackupSelected}
+                                disabled={
+                                  ((!seat.available || isSelected) &&
+                                    !isBackupSelected) ||
+                                  (formData!.backupSeatsRequested.length >=
+                                    formData!.seats * 2 &&
+                                    !isBackupSelected)
+                                }
+                                onChange={(e) =>
+                                  handleBackupSeatSelection(
+                                    committee.name,
+                                    seat.name,
+                                    e.target.checked
+                                  )
+                                }
+                                className="w-3 h-3 text-orange-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-orange-400 focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              />
+                              <span
+                                className={`font-montserrat-light transition-all duration-200 ${
+                                  isBackupSelected
+                                    ? "text-orange-400 font-montserrat-bold"
+                                    : "text-gray-400"
+                                }`}
+                              >
+                                {seat.name} (respaldo)
+                              </span>
+                            </label>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       ),
     },

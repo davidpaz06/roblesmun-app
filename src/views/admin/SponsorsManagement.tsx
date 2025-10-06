@@ -20,6 +20,7 @@ import {
 } from "react-icons/fa";
 import Loader from "../../components/Loader";
 import { FirestoreService } from "../../firebase/firestore";
+import { SupabaseStorage } from "../../supabase/storage";
 import { Link } from "react-router-dom";
 
 type SortOption = "newest" | "oldest" | "alphabetical" | "reverse-alphabetical";
@@ -34,6 +35,7 @@ const SponsorsManagement: FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const [formData, setFormData] = useState<Sponsor>({
     name: "",
@@ -64,7 +66,6 @@ const SponsorsManagement: FC = () => {
     switch (option) {
       case "newest":
         return sorted.sort((a, b) => {
-          // Asumiendo que tienen timestamp o usar el id
           const dateA = new Date(a.createdAt || a.id || "");
           const dateB = new Date(b.createdAt || b.id || "");
           return dateB.getTime() - dateA.getTime();
@@ -88,16 +89,56 @@ const SponsorsManagement: FC = () => {
     }
   };
 
+  // ✅ Función para filtrar patrocinadores
+  const filterSponsors = (
+    sponsorsList: Sponsor[],
+    search: string
+  ): Sponsor[] => {
+    if (!search.trim()) return sponsorsList;
+
+    const searchLower = search.toLowerCase();
+    return sponsorsList.filter(
+      (sponsor) =>
+        sponsor.name.toLowerCase().includes(searchLower) ||
+        sponsor.description.toLowerCase().includes(searchLower)
+    );
+  };
+
   useEffect(() => {
-    const sorted = sortSponsors(sponsors, sortOption);
+    const filtered = filterSponsors(sponsors, searchTerm);
+    const sorted = sortSponsors(filtered, sortOption);
     setFilteredSponsors(sorted);
-  }, [sponsors, sortOption]);
+  }, [sponsors, sortOption, searchTerm]);
 
   const handleSortChange = (option: SortOption) => {
     setSortOption(option);
   };
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {};
+  // ✅ Manejar cambio de imagen con validaciones
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validaciones
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor selecciona un archivo de imagen válido");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La imagen no debe superar los 5MB");
+      return;
+    }
+
+    setImageFile(file);
+
+    // Crear preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -121,26 +162,58 @@ const SponsorsManagement: FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    console.log(formData);
+
     try {
+      let logoUrl = formData.logo;
+
+      // ✅ Subir imagen si hay una nueva
+      if (imageFile) {
+        try {
+          logoUrl = await SupabaseStorage.uploadSponsorImage(imageFile);
+          console.log("✅ Logo subido:", logoUrl);
+        } catch (uploadError) {
+          console.error("❌ Error subiendo logo:", uploadError);
+          alert(
+            "Error subiendo el logo. El patrocinador se guardará sin imagen."
+          );
+        }
+      }
+
+      const sponsorData = {
+        name: formData.name,
+        logo: logoUrl,
+        description: formData.description,
+      };
+
       if (editingId) {
+        // ✅ Si hay imagen anterior y se cambió, eliminar la anterior
+        const currentSponsor = sponsors.find((s) => s.id === editingId);
+        if (
+          currentSponsor?.logo &&
+          imageFile &&
+          currentSponsor.logo !== logoUrl
+        ) {
+          try {
+            await SupabaseStorage.deleteSponsorImage(currentSponsor.logo);
+            console.log("✅ Logo anterior eliminado");
+          } catch (deleteError) {
+            console.warn(
+              "⚠️ No se pudo eliminar el logo anterior:",
+              deleteError
+            );
+          }
+        }
+
         await FirestoreService.update("sponsors", editingId, {
-          name: formData.name,
-          logo: formData.logo,
-          description: formData.description,
+          ...sponsorData,
           updatedAt: new Date().toISOString(),
         });
         alert("Patrocinador actualizado exitosamente");
       } else {
-        const sponsorData: Sponsor = {
-          name: formData.name,
-          logo: formData.logo,
-          description: formData.description,
+        await FirestoreService.add("sponsors", {
+          ...sponsorData,
           createdAt: new Date().toISOString(),
-        };
-
-        const newId = await FirestoreService.add("sponsors", sponsorData);
-        console.log("Nuevo patrocinador agregado con ID:", newId);
+        });
         alert("Patrocinador agregado exitosamente");
       }
 
@@ -172,12 +245,23 @@ const SponsorsManagement: FC = () => {
     }
 
     const confirmDelete = window.confirm(
-      "¿Estás seguro de que deseas eliminar este patrocinador?"
+      "¿Estás seguro de que deseas eliminar este patrocinador? Esta acción eliminará también su logo."
     );
     if (!confirmDelete) return;
 
     setIsLoading(true);
     try {
+      // ✅ Eliminar imagen de Storage antes de eliminar el documento
+      const sponsor = sponsors.find((s) => s.id === id);
+      if (sponsor?.logo) {
+        try {
+          await SupabaseStorage.deleteSponsorImage(sponsor.logo);
+          console.log("✅ Logo eliminado de Storage");
+        } catch (deleteError) {
+          console.warn("⚠️ No se pudo eliminar el logo:", deleteError);
+        }
+      }
+
       await FirestoreService.delete("sponsors", id);
       alert("Patrocinador eliminado exitosamente");
       await fetchSponsors();
@@ -217,58 +301,56 @@ const SponsorsManagement: FC = () => {
               <FaHome size={16} />
               Panel Admin
             </Link>
+            <p className="text-gray-400">
+              Total de patrocinadores: {sponsors.length}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* ✅ Buscador */}
+            <input
+              type="text"
+              placeholder="Buscar patrocinadores..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="px-4 py-2 bg-glass border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none"
+            />
             <button
               onClick={() => setShowForm(!showForm)}
-              className="bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#d53137] transition-colors"
+              className="bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#b71c1c] transition-colors"
             >
               <FaPlus />
               {showForm ? "Cancelar" : "Nuevo Patrocinador"}
             </button>
           </div>
-
-          {!isLoading && sponsors.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <span className="text-sm text-gray-300 font-medium">
-                Ordenar por:
-              </span>
-              <div className="flex gap-2">
-                {sortOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleSortChange(option.value)}
-                    className={`px-4 py-2 cursor-pointer rounded-lg flex items-center gap-2 text-sm transition-colors ${
-                      sortOption === option.value
-                        ? "bg-[#d53137] text-white"
-                        : "bg-glass text-gray-300 hover:bg-gray-700"
-                    }`}
-                  >
-                    {option.icon}
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
+        {/* Sorting Options */}
         {!isLoading && sponsors.length > 0 && (
-          <div className="mb-4 p-3 bg-glass rounded-lg">
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              {sortOptions.find((option) => option.value === sortOption)?.icon}
-              <span>
-                Mostrando {filteredSponsors.length} patrocinadores ordenados
-                por:{" "}
-              </span>
-              <span className="text-[#d53137] font-medium">
-                {
-                  sortOptions.find((option) => option.value === sortOption)
-                    ?.label
-                }
-              </span>
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <span className="text-sm text-gray-300 font-medium">
+              Ordenar por:
+            </span>
+            <div className="flex gap-2 flex-wrap">
+              {sortOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleSortChange(option.value)}
+                  className={`px-4 py-2 cursor-pointer rounded-lg flex items-center gap-2 text-sm transition-colors ${
+                    sortOption === option.value
+                      ? "bg-[#d53137] text-white"
+                      : "bg-glass text-gray-300 hover:bg-gray-700"
+                  }`}
+                >
+                  {option.icon}
+                  {option.label}
+                </button>
+              ))}
             </div>
           </div>
         )}
 
+        {/* Form */}
         {showForm && (
           <form
             onSubmit={handleSubmit}
@@ -290,7 +372,7 @@ const SponsorsManagement: FC = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full p-3 bg-glass text-[#f0f0f0] focus:border-[#d53137] outline-none transition-colors"
+                    className="w-full p-3 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none"
                     placeholder="Ej: Empresa XYZ"
                   />
                 </div>
@@ -305,7 +387,7 @@ const SponsorsManagement: FC = () => {
                     onChange={handleInputChange}
                     required
                     rows={8}
-                    className="w-full p-3 bg-glass text-[#f0f0f0] focus:border-[#d53137] outline-none resize-none transition-colors"
+                    className="w-full p-3 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none resize-none"
                     placeholder="Describe al patrocinador y su contribución al evento..."
                   />
                 </div>
@@ -326,7 +408,7 @@ const SponsorsManagement: FC = () => {
                           className="mx-auto max-h-48 max-w-full object-contain rounded-lg"
                         />
                         <div className="flex gap-2 justify-center">
-                          <label className="bg-[#d53137] text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-[#d53137] transition-colors flex items-center gap-2">
+                          <label className="bg-[#d53137] text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-[#b71c1c] transition-colors flex items-center gap-2">
                             <FaImage />
                             Cambiar imagen
                             <input
@@ -338,8 +420,11 @@ const SponsorsManagement: FC = () => {
                           </label>
                           <button
                             type="button"
-                            onClick={() => setImagePreview("")}
-                            className="bg-glass text-[#f0f0f0] px-4 py-2 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                            onClick={() => {
+                              setImagePreview("");
+                              setImageFile(null);
+                            }}
+                            className="bg-glass text-[#f0f0f0] px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
                           >
                             <FaTimes />
                             Quitar
@@ -350,7 +435,7 @@ const SponsorsManagement: FC = () => {
                       <div className="space-y-4">
                         <FaImage className="mx-auto text-6xl text-gray-400" />
                         <div>
-                          <label className="bg-[#d53137] text-white px-6 py-3 rounded-lg cursor-pointer hover:bg-[#d53137] transition-colors inline-flex items-center gap-2">
+                          <label className="bg-[#d53137] text-white px-6 py-3 rounded-lg cursor-pointer hover:bg-[#b71c1c] transition-colors inline-flex items-center gap-2">
                             <FaImage />
                             Seleccionar imagen
                             <input
@@ -370,14 +455,15 @@ const SponsorsManagement: FC = () => {
 
                   {imageFile && (
                     <p className="text-sm text-gray-400 mt-2">
-                      Archivo seleccionado: {imageFile.name}
+                      Archivo seleccionado: {imageFile.name} (
+                      {Math.round(imageFile.size / 1024)} KB)
                     </p>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 mt-8 pt-6 border-t border-[#242424]">
+            <div className="flex gap-4 mt-8 pt-6 border-t border-gray-600">
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -393,7 +479,7 @@ const SponsorsManagement: FC = () => {
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-glass text-[#f0f0f0] px-8 py-3 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                className="bg-glass text-[#f0f0f0] px-8 py-3 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
               >
                 <FaTimes />
                 Cancelar
@@ -402,24 +488,26 @@ const SponsorsManagement: FC = () => {
           </form>
         )}
 
+        {/* Loading */}
         {isLoading && <Loader message="Cargando patrocinadores..." />}
 
+        {/* Sponsors Grid */}
         {!isLoading && (
           <div className="w-full overflow-x-auto pb-4">
             <div className="flex gap-6 min-w-max">
               {filteredSponsors.map((sponsor) => (
                 <div
                   key={sponsor.id}
-                  className="flex-shrink-0 w-80 p-6 bg-glass transition-all duration-300 group"
+                  className="flex-shrink-0 w-80 p-6 bg-glass rounded-lg border border-gray-700 hover:border-[#d53137] transition-all duration-300 group"
                 >
-                  <div className="w-full h-40 flex items-center justify-center mb-4 bg-glass overflow-hidden">
+                  <div className="w-full h-40 flex items-center justify-center mb-4 bg-[#101010] rounded overflow-hidden">
                     <img
                       src={sponsor.logo}
                       alt={sponsor.name}
                       className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
-                          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA9TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+                          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
                       }}
                     />
                   </div>
@@ -433,7 +521,7 @@ const SponsorsManagement: FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex gap-2 mt-6 pt-4 border-t border-[#242424]">
+                  <div className="flex gap-2 mt-6 pt-4 border-t border-gray-600">
                     <button
                       onClick={() => handleEdit(sponsor)}
                       className="flex-1 bg-glass cursor-pointer text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
@@ -455,6 +543,7 @@ const SponsorsManagement: FC = () => {
           </div>
         )}
 
+        {/* Empty States */}
         {!isLoading && sponsors.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <FaImage className="mx-auto text-8xl mb-6 opacity-30" />
@@ -466,7 +555,7 @@ const SponsorsManagement: FC = () => {
             </p>
             <button
               onClick={() => setShowForm(true)}
-              className="bg-[#d53137] text-white px-8 py-3 rounded-lg hover:bg-[#d53137] transition-colors inline-flex items-center gap-2"
+              className="bg-[#d53137] text-white px-8 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors inline-flex items-center gap-2"
             >
               <FaPlus />
               Agregar Patrocinador
@@ -474,10 +563,45 @@ const SponsorsManagement: FC = () => {
           </div>
         )}
 
-        <div className="mt-8 p-4 bg-glass">
-          <div className="flex justify-between items-center text-sm">
-            <span>Total de patrocinadores: {sponsors.length}</span>
-            <span>Última actualización: {new Date().toLocaleString()}</span>
+        {!isLoading && sponsors.length > 0 && filteredSponsors.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <FaImage className="mx-auto text-8xl mb-6 opacity-30" />
+            <h3 className="text-2xl font-montserrat-bold mb-2">
+              No se encontraron patrocinadores
+            </h3>
+            <p className="text-lg mb-4">
+              Intenta ajustar los términos de búsqueda
+            </p>
+            <button
+              onClick={() => setSearchTerm("")}
+              className="bg-[#d53137] text-white px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors"
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
+        )}
+
+        {/* Footer Stats */}
+        <div className="mt-8 p-4 bg-glass rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-montserrat-bold text-[#f0f0f0]">
+                {sponsors.length}
+              </div>
+              <div className="text-sm text-gray-400">Total Patrocinadores</div>
+            </div>
+            <div>
+              <div className="text-2xl font-montserrat-bold text-blue-400">
+                {filteredSponsors.length}
+              </div>
+              <div className="text-sm text-gray-400">Mostrando</div>
+            </div>
+            <div>
+              <div className="text-2xl font-montserrat-bold text-green-400">
+                {sponsors.filter((s) => s.logo).length}
+              </div>
+              <div className="text-sm text-gray-400">Con Logo</div>
+            </div>
           </div>
         </div>
       </div>

@@ -14,10 +14,11 @@ const Sidebar: FC = () => {
 
   const sidebarTabs = [
     { name: "Inicio", path: "/" },
-    { name: "Prensa", path: "/press" },
+    // { name: "Prensa", path: "/press" },
     { name: "Patrocinadores", path: "/sponsors" },
     { name: "Inscripciones", path: "/registrations" },
     { name: "Comités", path: "/committees" },
+    ...(user?.isAdmin ? [{ name: "Panel Admin", path: "/admin" }] : []),
     { name: "Iniciar sesión", path: "/login" },
   ];
 
@@ -65,7 +66,11 @@ const Sidebar: FC = () => {
                 <li key={tab.name}>
                   <Link
                     onClick={close}
-                    className="block py-4 font-montserrat-light text-[#f0f0f0] hover:text-gray-300"
+                    className={`block py-4 font-montserrat-light text-[#f0f0f0] hover:text-gray-300 transition-colors ${
+                      tab.path === "/admin"
+                        ? "bg-black/20 rounded px-2 font-montserrat-bold"
+                        : ""
+                    }`}
                     to={tab.path}
                   >
                     {tab.name}
@@ -79,6 +84,11 @@ const Sidebar: FC = () => {
               <div className=" font-montserrat-light text-[#f0f0f0]">
                 <span className="absolute bottom-20 left-4 text-sm">
                   {user.email}
+                  {user.isAdmin && (
+                    <span className="block text-xs text-yellow-300 font-montserrat-bold mt-1">
+                      Administrador
+                    </span>
+                  )}
                 </span>
                 <span
                   onClick={logout}

@@ -20,8 +20,17 @@ export class SupabaseStorage {
         .substring(2)}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
+      // ✅ Seleccionar bucket según el folder
+      let bucketName = "roblesmun-images"; // Default
+
+      if (folder === "committees") {
+        bucketName = "committees";
+      } else if (folder === "sponsors") {
+        bucketName = "sponsors";
+      }
+
       const { error } = await supabase.storage
-        .from("roblesmun-images")
+        .from(bucketName)
         .upload(filePath, file, {
           cacheControl: "3600",
           upsert: false,
@@ -32,13 +41,136 @@ export class SupabaseStorage {
       }
 
       const { data: urlData } = supabase.storage
-        .from("roblesmun-images")
+        .from(bucketName)
         .getPublicUrl(filePath);
 
       return urlData.publicUrl;
     } catch (error) {
       console.error("Error in uploadImage:", error);
       throw error;
+    }
+  }
+
+  // ✅ Método específico para imágenes de patrocinadores
+  static async uploadSponsorImage(file: File): Promise<string> {
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}.${fileExt}`;
+
+      console.log("📄 Subiendo logo de patrocinador:", fileName);
+
+      // Validaciones
+      if (!file.type.startsWith("image/")) {
+        throw new Error("El archivo debe ser una imagen");
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("La imagen no debe superar los 5MB");
+      }
+
+      const { error } = await supabase.storage
+        .from("sponsors") // ✅ Usar bucket específico para patrocinadores
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (error) {
+        throw new Error(`Error uploading sponsor image: ${error.message}`);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("sponsors")
+        .getPublicUrl(fileName);
+
+      console.log("✅ Logo de patrocinador subido:", urlData.publicUrl);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Error in uploadSponsorImage:", error);
+      throw error;
+    }
+  }
+
+  // ✅ Método para eliminar imágenes de patrocinadores
+  static async deleteSponsorImage(url: string): Promise<void> {
+    try {
+      const urlParts = url.split("/storage/v1/object/public/sponsors/");
+      if (urlParts.length < 2) {
+        throw new Error("Invalid sponsor image URL format");
+      }
+      const path = urlParts[1];
+
+      const { error } = await supabase.storage.from("sponsors").remove([path]);
+
+      if (error) {
+        throw new Error(`Error deleting sponsor image: ${error.message}`);
+      }
+    } catch (error) {
+      console.error("Error in deleteSponsorImage:", error);
+    }
+  }
+
+  // ✅ Método específico para imágenes de comités
+  static async uploadCommitteeImage(file: File): Promise<string> {
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}.${fileExt}`;
+
+      console.log("📄 Subiendo imagen de comité:", fileName);
+
+      if (!file.type.startsWith("image/")) {
+        throw new Error("El archivo debe ser una imagen");
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("La imagen no debe superar los 5MB");
+      }
+
+      const { error } = await supabase.storage
+        .from("committees")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (error) {
+        throw new Error(`Error uploading committee image: ${error.message}`);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("committees")
+        .getPublicUrl(fileName);
+
+      console.log("✅ Imagen de comité subida:", urlData.publicUrl);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Error in uploadCommitteeImage:", error);
+      throw error;
+    }
+  }
+
+  // ✅ Método para eliminar imágenes de comités
+  static async deleteCommitteeImage(url: string): Promise<void> {
+    try {
+      const urlParts = url.split("/storage/v1/object/public/committees/");
+      if (urlParts.length < 2) {
+        throw new Error("Invalid committee image URL format");
+      }
+      const path = urlParts[1];
+
+      const { error } = await supabase.storage
+        .from("committees")
+        .remove([path]);
+
+      if (error) {
+        throw new Error(`Error deleting committee image: ${error.message}`);
+      }
+    } catch (error) {
+      console.error("Error in deleteCommitteeImage:", error);
     }
   }
 

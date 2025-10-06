@@ -17,7 +17,7 @@ const CommitteesView: FC = () => {
   const fetchCommittees = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await FirestoreService.getAll<Committee>("committee");
+      const data = await FirestoreService.getAll<Committee>("committees");
       console.log(data);
       setCommittees(data.length > 0 ? data : localCommittees);
     } catch (error) {
