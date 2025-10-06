@@ -67,7 +67,8 @@ const Header: FC = () => {
       )}
 
       <nav>
-        <ul className="mt-12 w-full h-12 flex items-center justify-around bg-glass">
+        <ul className="mt-12 w-full h-12 flex items-center justify-around bg-black/10 rounded-xl border border-white/20 shadow-lg backdrop-blur-lg">
+          {" "}
           <li className="h-full">
             <Link className="h-full flex items-center px-1" to="/">
               <img
@@ -77,7 +78,6 @@ const Header: FC = () => {
               />
             </Link>
           </li>
-
           {headerTabs.map((tab) => (
             <li className="h-full" key={tab.name}>
               <Link
@@ -88,7 +88,6 @@ const Header: FC = () => {
               </Link>
             </li>
           ))}
-
           {user?.isAdmin && (
             <li className="h-full">
               <Link

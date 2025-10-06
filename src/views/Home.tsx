@@ -93,7 +93,7 @@ const Home: FC = () => {
 
           <img
             className="sm:max-w-[260px] sm:w-[30%] max-w-[320px] sm:absolute bottom-0 sm:right-18 right-8 transition-all duration-500 ease-in-out"
-            src="src/assets/img/fazio.png"
+            src="/fazio.png"
             alt=""
           />
         </div>
