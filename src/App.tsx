@@ -15,6 +15,7 @@ import Registrations from "./views/Registrations";
 import AdminDashboard from "./views/admin/AdminDashboard";
 import SponsorsManagement from "./views/admin/SponsorsManagement";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RegistrationsManagement from "./views/admin/RegistrationsManagement";
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640),
@@ -66,6 +67,14 @@ function App() {
               element={
                 <ProtectedRoute requireAdmin={true}>
                   <SponsorsManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/registrations"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <RegistrationsManagement />
                 </ProtectedRoute>
               }
             />

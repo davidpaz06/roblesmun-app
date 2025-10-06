@@ -119,6 +119,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
         lastName: userData.lastName,
         institution: userData.institution || "",
         isFaculty,
+        isAdmin: false,
       });
 
       await login({ email: userData.email, password: userData.password });
