@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useAuth } from "../context/AuthContext";
 import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 import type { LoginData } from "../interfaces/LoginData";
+import type { FacultyCode } from "../interfaces/FacultyCode"; // Importar la interfaz correcta
 import { FirestoreService } from "../firebase/firestore";
 
 const loginSchema = z.object({
@@ -81,7 +82,9 @@ const Login: FC = () => {
 
   const getInstitutions = async (): Promise<string[]> => {
     try {
-      const facultyCodes = await FirestoreService.getAll("facultyCodes");
+      const facultyCodes = (await FirestoreService.getAll(
+        "facultyCodes"
+      )) as FacultyCode[];
       const institutionNames = facultyCodes.map((doc) => doc.institution);
       const uniqueInstitutions = [...new Set(institutionNames)];
       return uniqueInstitutions;
