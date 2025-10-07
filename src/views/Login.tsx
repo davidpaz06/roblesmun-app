@@ -58,7 +58,7 @@ interface FormFields {
   isRegistering: boolean;
   options?: string[];
 }
-
+// comment
 const Login: FC = () => {
   const { login, register, checkFacultyCode, isLoading } = useAuth();
   const navigate = useNavigate();
