@@ -275,7 +275,7 @@ const Login: FC = () => {
           <span className="flex flex-row items-center gap-4 my-4">
             <Link className="h-full flex items-center px-1" to="/">
               <img
-                src="src/assets/img/logo-white.png"
+                src="/logo-white.png"
                 alt="Logo de Roblesmun"
                 className="h-12 w-auto"
               />
