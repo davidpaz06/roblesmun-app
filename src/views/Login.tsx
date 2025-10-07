@@ -83,18 +83,12 @@ const Login: FC = () => {
   const getInstitutions = async (): Promise<string[]> => {
     try {
       const response = await FirestoreService.getAll("facultyCodes");
-      const facultyCodes = response as FacultyCode[];
 
-      // Filtrar solo documentos válidos que tengan la propiedad institution
-      const institutionNames = facultyCodes
-        .filter(
-          (doc): doc is FacultyCode =>
-            doc !== null &&
-            typeof doc === "object" &&
-            "institution" in doc &&
-            typeof doc.institution === "string"
-        )
-        .map((doc) => doc.institution);
+      // Solución más directa con type assertion
+      const institutionNames = (response as FacultyCode[])
+        .filter((doc) => doc && typeof doc === "object" && "institution" in doc)
+        .map((doc) => (doc as FacultyCode).institution)
+        .filter((institution) => typeof institution === "string");
 
       const uniqueInstitutions = [...new Set(institutionNames)];
       return uniqueInstitutions;
