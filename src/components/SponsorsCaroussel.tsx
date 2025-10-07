@@ -15,19 +15,50 @@ const SponsorsCaroussel: FC<SponsorsCarousselProps> = ({
   autoSlideInterval = 5000,
 }) => {
   useEffect(() => {
+    if (sponsors.length === 0) return;
+
     const timer = setTimeout(() => {
       setCurrentSlide((currentSlide + 1) % sponsors.length);
     }, autoSlideInterval);
     return () => clearTimeout(timer);
   }, [currentSlide, sponsors.length, setCurrentSlide, autoSlideInterval]);
 
+  // Validar que hay sponsors y que el currentSlide está en rango válido
+  if (!sponsors || sponsors.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full">
+        <div className="flex items-center justify-center h-48 w-full">
+          <p className="text-gray-400">No hay patrocinadores disponibles</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Asegurar que currentSlide esté en rango válido
+  const validCurrentSlide = currentSlide >= sponsors.length ? 0 : currentSlide;
+  const currentSponsor = sponsors[validCurrentSlide];
+
+  if (!currentSponsor) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full">
+        <div className="flex items-center justify-center h-48 w-full">
+          <p className="text-gray-400">Cargando patrocinador...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center w-full h-full">
       <div className="flex items-center justify-center h-48 w-full transition-all duration-700 ease-in-out">
         <img
-          src={sponsors[currentSlide].logo}
-          alt={`Logo de ${sponsors[currentSlide].name}`}
+          src={currentSponsor.logo}
+          alt={`Logo de ${currentSponsor.name}`}
           className="max-h-48 max-w-full object-contain"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+          }}
         />
       </div>
       <div className="flex gap-2 mt-8">
@@ -37,7 +68,9 @@ const SponsorsCaroussel: FC<SponsorsCarousselProps> = ({
             key={idx}
             onClick={() => setCurrentSlide(idx)}
             className={`w-3 h-3 rounded-full cursor-pointer transition-all duration-300 ${
-              idx === currentSlide ? "bg-[#d53137] scale-125" : "bg-[#242424]"
+              idx === validCurrentSlide
+                ? "bg-[#d53137] scale-125"
+                : "bg-[#242424]"
             }`}
           />
         ))}
