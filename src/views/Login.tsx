@@ -1,10 +1,11 @@
 import type { FC } from "react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "../context/AuthContext";
 import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 import type { LoginData } from "../interfaces/LoginData";
+import { FirestoreService } from "../firebase/firestore";
 
 const loginSchema = z.object({
   email: z
@@ -75,7 +76,29 @@ const Login: FC = () => {
     [isFaculty, setIsFaculty] = useState<boolean>(false),
     [facultyCodeValid, setFacultyCodeValid] = useState<boolean | null>(null),
     [facultyCodeChecking, setFacultyCodeChecking] = useState<boolean>(false),
+    [institutions, setInstitutions] = useState<string[]>([]),
     facultyCodeDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const getInstitutions = async (): Promise<string[]> => {
+    try {
+      const facultyCodes = await FirestoreService.getAll("facultyCodes");
+      const institutionNames = facultyCodes.map((doc) => doc.institution);
+      const uniqueInstitutions = [...new Set(institutionNames)];
+      return uniqueInstitutions;
+    } catch (error) {
+      console.error("Error obteniendo instituciones:", error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const loadInstitutions = async () => {
+      const institutionsList = await getInstitutions();
+      setInstitutions(institutionsList);
+    };
+
+    loadInstitutions();
+  }, []);
 
   const formFields: Array<FormFields> = [
     {
@@ -83,16 +106,7 @@ const Login: FC = () => {
       name: "institution",
       type: "select",
       isRegistering: true,
-      options: [
-        "U.E. Liceo Los Robles",
-        "U.E. Colegio Mater Salvatoris",
-        "U.E. Colegio Altamira",
-        "U.E. Colegio Bellas Artes",
-        "U.E. Colegio San Ignacio",
-        "Universidad Católica Andrés Bello",
-        "Universidad Central de Venezuela",
-        "Universidad Simón Bolívar",
-      ],
+      options: institutions,
     },
     {
       label: "Correo Electrónico Institucional",
