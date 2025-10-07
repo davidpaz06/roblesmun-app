@@ -51,9 +51,9 @@ const RegistrationsManagementModal: FC<RegistrationsManagementModalProps> = ({
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-glass p-8 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-black/10 rounded-xl border border-white/20 shadow-lg backdrop-blur-lg p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="p-6 border-b border-gray-700 flex justify-between items-center">
+        <div className="p-6 border-b border-[#242424] flex justify-between items-center">
           <h2 className="text-2xl font-montserrat-bold">
             Detalles de Inscripción
           </h2>

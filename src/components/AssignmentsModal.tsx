@@ -69,7 +69,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
     return selectedRegistration?.seats || 0;
   };
 
-  // Validar asignación en tiempo real
   useEffect(() => {
     if (selectedRegistration && assignmentSeats.length > 0) {
       const validationResult = AssignmentValidationService.validateAssignment(
@@ -149,7 +148,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
 
     setIsProcessing(true);
     try {
-      // ✅ SOLO una ejecución del procesamiento
       const result = await AssignmentValidationService.processAssignment(
         selectedRegistration,
         assignmentSeats,
@@ -208,7 +206,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
   };
 
   const handleGenerateAssignmentPDF = () => {
-    // ✅ Solo permitir si ya hay asignación confirmada
     if (
       selectedRegistration.assignedSeats &&
       selectedRegistration.assignedSeats.length > 0
@@ -218,7 +215,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
         selectedRegistration.assignedSeats
       );
     } else {
-      // ✅ Si no hay asignación confirmada, generar con los cupos actuales (solo vista previa)
       AssignmentsPDFGenerator.downloadAssignmentsPDF(
         selectedRegistration,
         assignmentSeats
@@ -279,7 +275,7 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-glass p-8 rounded-lg max-w-8xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-black/10 rounded-xl border border-white/20 shadow-lg backdrop-blur-lg p-8 max-w-8xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
