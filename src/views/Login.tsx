@@ -82,10 +82,20 @@ const Login: FC = () => {
 
   const getInstitutions = async (): Promise<string[]> => {
     try {
-      const facultyCodes = (await FirestoreService.getAll(
-        "facultyCodes"
-      )) as FacultyCode[];
-      const institutionNames = facultyCodes.map((doc) => doc.institution);
+      const response = await FirestoreService.getAll("facultyCodes");
+      const facultyCodes = response as FacultyCode[];
+
+      // Filtrar solo documentos válidos que tengan la propiedad institution
+      const institutionNames = facultyCodes
+        .filter(
+          (doc): doc is FacultyCode =>
+            doc !== null &&
+            typeof doc === "object" &&
+            "institution" in doc &&
+            typeof doc.institution === "string"
+        )
+        .map((doc) => doc.institution);
+
       const uniqueInstitutions = [...new Set(institutionNames)];
       return uniqueInstitutions;
     } catch (error) {
