@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { Link } from "react-router-dom";
 import {
-  //   FaUsers,
+  FaUsers,
   FaNewspaper,
   FaHandshake,
   FaGavel,
@@ -10,6 +10,11 @@ import {
 
 const AdminDashboard: FC = () => {
   const sections = [
+    {
+      title: "Delegados de Roblesmun",
+      icon: <FaUsers />,
+      path: "/admin/delegates",
+    },
     {
       title: "Prensa",
       icon: <FaNewspaper />,
