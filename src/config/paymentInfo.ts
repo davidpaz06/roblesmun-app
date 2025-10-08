@@ -29,7 +29,7 @@ export const paymentInformation: PaymentInfo[] = [
       Teléfono: "0412-996-8751",
       Cédula: "V-30.217.393",
       Titular: "XVII Roblesmun",
-      QR: "src/assets/img/qr-pagomovil.jpg",
+      QR: "/qr-pagomovil.jpg",
     },
     message:
       "Envía los cuatro últimos dígitos del número de referencia de tu pago móvil.",

@@ -521,7 +521,6 @@ const DelegatesManagement: FC = () => {
           </div>
         )}
 
-        {/* Modal de confirmación */}
         {showConfirmModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
             <div className="bg-[#181818] border border-[#d53137] rounded-lg p-8 max-w-md w-full text-center shadow-lg">
@@ -566,33 +565,37 @@ const DelegatesManagement: FC = () => {
             <>
               {filteredDelegates.length > 0 ? (
                 <div className="w-full overflow-x-auto pb-4">
-                  <table className="min-w-max w-full bg-glass rounded-lg overflow-hidden">
+                  <table className="min-w-max w-full bg-glass rounded-lg overflow-hidden text-sm sm:text-base">
                     <thead>
                       <tr className="bg-[#181818] text-[#d53137] text-left">
-                        <th className="py-3 px-4 font-montserrat-bold">
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
                           Nombre
                         </th>
-                        <th className="py-3 px-4 font-montserrat-bold">
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
                           Apellido
                         </th>
-                        <th className="py-3 px-4 font-montserrat-bold">Año</th>
-                        <th className="py-3 px-4 font-montserrat-bold">
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
+                          Año
+                        </th>
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
                           Sección
                         </th>
-                        <th className="py-3 px-4 font-montserrat-bold">
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
                           Inscrito En
                         </th>
-                        <th className="py-3 px-4 font-montserrat-bold">
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
                           Estado
                         </th>
-                        <th className="py-3 px-4 font-montserrat-bold">
-                          Monto Bs
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
+                          Bs
                         </th>
-                        <th className="py-3 px-4 font-montserrat-bold">
-                          Monto $
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
+                          $
                         </th>
-                        <th className="py-3 px-4 font-montserrat-bold">Tasa</th>
-                        <th className="py-3 px-4 font-montserrat-bold text-center">
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
+                          Tasa
+                        </th>
+                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base text-center">
                           Acciones
                         </th>
                       </tr>
@@ -603,33 +606,47 @@ const DelegatesManagement: FC = () => {
                           key={d.id || idx}
                           className="border-b border-gray-700 hover:bg-[#232323] transition-colors"
                         >
-                          <td className="py-2 px-4">{d.nombre}</td>
-                          <td className="py-2 px-4">{d.apellido}</td>
-                          <td className="py-2 px-4">{d.año}</td>
-                          <td className="py-2 px-4">{d.seccion}</td>
-                          <td className="py-2 px-4">
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">
+                            {d.nombre}
+                          </td>
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">
+                            {d.apellido}
+                          </td>
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">{d.año}</td>
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">
+                            {d.seccion}
+                          </td>
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">
                             {d.inscritoEn
                               ? new Date(d.inscritoEn).toLocaleDateString()
                               : "-"}
                           </td>
-                          <td className="py-2 px-4">{d.estado}</td>
-                          <td className="py-2 px-4">{d.montoBs ?? 0}</td>
-                          <td className="py-2 px-4">{d.montoDolar ?? 0}</td>
-                          <td className="py-2 px-4">{d.tasa}</td>
-                          <td className="py-2 px-4 flex gap-2 justify-center">
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">
+                            {d.estado}
+                          </td>
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">
+                            {d.montoBs ?? 0}
+                          </td>
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">
+                            {d.montoDolar ?? 0}
+                          </td>
+                          <td className="py-1 px-2 sm:py-2 sm:px-4">
+                            {d.tasa}
+                          </td>
+                          <td className="py-1 px-2 sm:py-2 sm:px-4 flex gap-2 sm:gap-4 justify-center">
                             <button
                               onClick={() => handleEdit(d)}
-                              className="bg-glass cursor-pointer text-[#f0f0f0] px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+                              className="bg-glass cursor-pointer text-[#f0f0f0] px-2 py-1 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1 sm:gap-2 hover:bg-blue-700 transition-colors text-xs sm:text-base"
                             >
                               <FaEdit />
-                              Editar
+                              <span className="hidden sm:inline">Editar</span>
                             </button>
                             <button
                               onClick={() => handleDelete(d.id!)}
-                              className="bg-[#d53137] cursor-pointer text-[#f0f0f0] px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-700 transition-colors"
+                              className="bg-[#d53137] cursor-pointer text-[#f0f0f0] px-2 py-1 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1 sm:gap-2 hover:bg-red-700 transition-colors text-xs sm:text-base"
                             >
                               <FaTrash />
-                              Eliminar
+                              <span className="hidden sm:inline">Eliminar</span>
                             </button>
                           </td>
                         </tr>
