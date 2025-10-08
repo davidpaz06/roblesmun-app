@@ -23,7 +23,6 @@ const SponsorsCaroussel: FC<SponsorsCarousselProps> = ({
     return () => clearTimeout(timer);
   }, [currentSlide, sponsors.length, setCurrentSlide, autoSlideInterval]);
 
-  // Validar que hay sponsors y que el currentSlide está en rango válido
   if (!sponsors || sponsors.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full">
@@ -34,7 +33,6 @@ const SponsorsCaroussel: FC<SponsorsCarousselProps> = ({
     );
   }
 
-  // Asegurar que currentSlide esté en rango válido
   const validCurrentSlide = currentSlide >= sponsors.length ? 0 : currentSlide;
   const currentSponsor = sponsors[validCurrentSlide];
 

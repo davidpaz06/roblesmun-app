@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import CommitteeModal from "../components/CommitteeModal";
 import { FirestoreService } from "../firebase/firestore";
 import Loader from "../components/Loader";
-import { FaClock, FaGavel, FaExclamationTriangle } from "react-icons/fa";
+import { FaClock, FaExclamationTriangle } from "react-icons/fa";
 
 const CommitteesView: FC = () => {
   const [committeesInfo, setCommittees] = useState<Committee[]>([]);
@@ -23,7 +23,6 @@ const CommitteesView: FC = () => {
       const data = await FirestoreService.getAll<Committee>("committees");
       console.log("✅ Comités obtenidos:", data);
 
-      // ✅ Solo usar los comités de Firestore, no fallback a localCommittees
       setCommittees(data);
     } catch (error) {
       console.error("❌ Error cargando comités:", error);
@@ -38,161 +37,152 @@ const CommitteesView: FC = () => {
     fetchCommittees();
   }, [fetchCommittees]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader message="Cargando comités..." />
-      </div>
-    );
-  }
-
   return (
     <>
-      <section className="text-[#f0f0f0] w-[90%] min-h-[100vh] sm:pt-32 flex justify-center">
-        <div className="w-full max-w-[1200px] px-4">
-          <h2 className="sm:text-[3.5em] text-[2.5em] my-4 font-montserrat-bold transition-all duration-500 ease-in-out">
-            Comités
-          </h2>
+      <meta title="ROBLESMUN - Comités" />
+      <meta name="description" content="Descubre los comités de ROBLESMUN." />
+      <title>ROBLESMUN - Comités</title>
 
-          {hasError && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <FaExclamationTriangle className="text-red-400 text-6xl mb-6" />
-              <h3 className="text-2xl font-montserrat-bold mb-4 text-red-300">
-                Error cargando comités
-              </h3>
-              <p className="text-gray-400 mb-6 max-w-md">
-                No se pudieron cargar los comités en este momento. Por favor,
-                verifica tu conexión e intenta nuevamente.
-              </p>
-              <button
-                onClick={fetchCommittees}
-                className="bg-[#d53137] text-white px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors font-montserrat-bold"
-              >
-                Reintentar
-              </button>
-            </div>
-          )}
+      {isLoading && (
+        <div className="flex justify-center items-center min-h-screen">
+          <Loader message="Cargando comités..." />
+        </div>
+      )}
 
-          {!hasError && committeesInfo.length === 0 && (
-            <div className="flex flex-col items-center justify-center pb-8 text-center">
-              <div className="bg-orange-900/20 border border-orange-600 rounded-full p-6 mb-6">
-                <FaClock className="text-orange-400 text-6xl" />
-              </div>
+      {!isLoading && (
+        <section className="text-[#f0f0f0] w-[90%] min-h-[100vh] sm:pt-32 flex justify-center">
+          <div className="w-full max-w-[1200px] px-4">
+            <h2 className="sm:text-[3.5em] text-[2.5em] my-4 font-montserrat-bold transition-all duration-500 ease-in-out">
+              Comités
+            </h2>
 
-              <h3 className="text-3xl font-montserrat-bold mb-4 text-orange-300">
-                Comités próximamente
-              </h3>
-
-              <div className="max-w-2xl space-y-4">
-                <p className="text-lg text-gray-300 font-montserrat-light leading-relaxed">
-                  Los comités de la{" "}
-                  <strong className="text-[#d53137]">
-                    XVII edición de ROBLESMUN
-                  </strong>{" "}
-                  están siendo preparados por nuestro equipo académico.
+            {hasError && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <FaExclamationTriangle className="text-red-400 text-6xl mb-6" />
+                <h3 className="text-2xl font-montserrat-bold mb-4 text-red-300">
+                  Error cargando comités
+                </h3>
+                <p className="text-gray-400 mb-6 max-w-md">
+                  No se pudieron cargar los comités en este momento. Por favor,
+                  verifica tu conexión e intenta nuevamente.
                 </p>
-
-                <p className="text-base text-gray-400 font-montserrat-light">
-                  Pronto podrás conocer todos los detalles sobre los comités,
-                  tópicos, presidentes y cupos disponibles para esta emocionante
-                  edición.
-                </p>
-              </div>
-
-              <div className="mt-8 p-6 bg-blue-900/20 border border-blue-600 rounded-xl max-w-lg">
-                <div className="flex items-center gap-2 justify-center mb-3">
-                  <FaGavel className="text-blue-400" />
-                  <span className="text-blue-300 font-montserrat-bold">
-                    ¿Qué esperar?
-                  </span>
-                </div>
-                <ul className="text-sm text-blue-200 space-y-2 text-left">
-                  <li>• Comités especializados con tópicos actuales</li>
-                  <li>• Presidentes experimentados</li>
-                  <li>• Cupos para delegaciones de todos los tamaños</li>
-                  <li>• Guías de estudio detalladas</li>
-                </ul>
-              </div>
-
-              <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center">
                 <button
                   onClick={fetchCommittees}
-                  className="bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors font-montserrat-bold flex items-center gap-2"
+                  className="bg-[#d53137] text-white px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors font-montserrat-bold"
                 >
-                  <FaClock />
-                  Verificar nuevamente
+                  Reintentar
                 </button>
-
-                <p className="text-xs text-gray-500 font-montserrat-light">
-                  Mantente atento a nuestras redes sociales para las últimas
-                  actualizaciones
-                </p>
               </div>
-            </div>
-          )}
+            )}
 
-          {!hasError && committeesInfo.length > 0 && (
-            <>
-              <p className="text-gray-400 mb-8 font-montserrat-light">
-                Explora los {committeesInfo.length} comités disponibles para la
-                XVII edición de ROBLESMUN. Haz clic en cualquier comité para ver
-                más detalles.
-              </p>
+            {!hasError && committeesInfo.length === 0 && (
+              <>
+                <div className="flex flex-col items-center justify-center bg-glass p-8 text-center">
+                  <div className="bg-orange-900/20 border border-orange-600 rounded-full p-6 mb-6">
+                    <FaClock className="text-orange-400 text-6xl" />
+                  </div>
 
-              <div className="grid grid-cols-1 my-8 md:grid-cols-2 gap-8">
-                {committeesInfo.map((committee) => (
-                  <div
-                    key={committee.name}
-                    className={`bg-glass p-2 rounded-lg overflow-hidden shadow-lg cursor-pointer transition-transform hover:scale-105 hover:border-[#d53137] border border-transparent`}
-                    onClick={() => setSelectedCommittee(committee)}
+                  <h3 className="text-3xl font-montserrat-bold mb-4 text-orange-300">
+                    Comités próximamente
+                  </h3>
+
+                  <div className="max-w-2xl space-y-4">
+                    <p className="text-lg text-gray-300 font-montserrat-light leading-relaxed">
+                      Los comités de la{" "}
+                      <strong className="text-[#d53137]">
+                        XVII edición de ROBLESMUN
+                      </strong>{" "}
+                      están siendo preparados por nuestro equipo académico.
+                    </p>
+
+                    <p className="text-base text-gray-400 font-montserrat-light">
+                      Pronto podrás conocer todos los detalles sobre los
+                      comités, tópicos, presidentes y cupos disponibles para
+                      esta emocionante edición.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="my-6 flex flex-col sm:flex-row gap-4 items-center">
+                  <button
+                    onClick={fetchCommittees}
+                    className="bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors font-montserrat-bold flex items-center gap-2"
                   >
-                    <img
-                      src={committee.img}
-                      alt={committee.name}
-                      className="w-full h-48 object-contain bg-[#101010] rounded"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Nic0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
-                      }}
-                    />
-                    <div className="p-4">
-                      <h3 className="text-lg font-montserrat-bold mb-2 line-clamp-2 min-h-[3rem]">
-                        {committee.name}
-                      </h3>
-                      <p className="text-sm font-montserrat-light text-gray-300 line-clamp-2 mb-2">
-                        <strong>Tópico:</strong> {committee.topic}
-                      </p>
+                    <FaClock />
+                    Verificar nuevamente
+                  </button>
 
-                      {committee.president && (
-                        <p className="text-sm text-blue-300 mb-2">
-                          <strong>Presidente:</strong> {committee.president}
+                  <p className="text-xs text-gray-500 font-montserrat-light">
+                    Mantente atento a nuestras redes sociales para las últimas
+                    actualizaciones
+                  </p>
+                </div>
+              </>
+            )}
+
+            {!hasError && committeesInfo.length > 0 && (
+              <>
+                <p className="text-gray-400 mb-8 font-montserrat-light">
+                  Explora los {committeesInfo.length} comités disponibles para
+                  la XVII edición de ROBLESMUN. Haz clic en cualquier comité
+                  para ver más detalles.
+                </p>
+
+                <div className="grid grid-cols-1 my-8 md:grid-cols-2 gap-8">
+                  {committeesInfo.map((committee) => (
+                    <div
+                      key={committee.name}
+                      className={`bg-glass p-2 rounded-lg overflow-hidden shadow-lg cursor-pointer transition-transform hover:scale-105 hover:border-[#d53137] border border-transparent`}
+                      onClick={() => setSelectedCommittee(committee)}
+                    >
+                      <img
+                        src={committee.img}
+                        alt={committee.name}
+                        className="w-full h-48 object-contain bg-[#101010] rounded"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA9TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Nic0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+                        }}
+                      />
+                      <div className="p-4">
+                        <h3 className="text-lg font-montserrat-bold mb-2 line-clamp-2 min-h-[3rem]">
+                          {committee.name}
+                        </h3>
+                        <p className="text-sm font-montserrat-light text-gray-300 line-clamp-2 mb-2">
+                          <strong>Tópico:</strong> {committee.topic}
                         </p>
-                      )}
 
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-montserrat-bold text-green-400">
-                          {committee.seats} cupos totales
-                        </p>
-
-                        {committee.seatsList && (
-                          <p className="text-xs text-gray-400">
-                            {
-                              committee.seatsList.filter(
-                                (seat) => seat.available
-                              ).length
-                            }{" "}
-                            disponibles
+                        {committee.president && (
+                          <p className="text-sm text-blue-300 mb-2">
+                            <strong>Presidente:</strong> {committee.president}
                           </p>
                         )}
+
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-montserrat-bold text-green-400">
+                            {committee.seats} cupos totales
+                          </p>
+
+                          {committee.seatsList && (
+                            <p className="text-xs text-gray-400">
+                              {
+                                committee.seatsList.filter(
+                                  (seat) => seat.available
+                                ).length
+                              }{" "}
+                              disponibles
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       <AnimatePresence>
         {selectedCommittee && (
