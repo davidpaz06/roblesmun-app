@@ -52,7 +52,6 @@ const RegistrationsManagementModal: FC<RegistrationsManagementModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div className="bg-black/10 rounded-xl border border-white/20 shadow-lg backdrop-blur-lg p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="p-6 border-b border-[#242424] flex justify-between items-center">
           <h2 className="text-2xl font-montserrat-bold">
             Detalles de Inscripción
@@ -66,10 +65,8 @@ const RegistrationsManagementModal: FC<RegistrationsManagementModalProps> = ({
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Información del Usuario */}
             <div className="space-y-4">
               <h3 className="text-lg font-montserrat-bold text-[#d53137] mb-3">
                 Información del Usuario

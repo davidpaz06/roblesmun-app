@@ -103,7 +103,7 @@ const Home: FC = () => {
         <div className="absolute inset-0 bg-black/65"></div>
 
         <div className="relative w-[90%] max-w-[1200px] py-8 text-center">
-          <h2 className="text-[2.75em] sm:text-[4.5em] font-montserrat-bold mb-8 transition-all duration-500 ease-in-out">
+          <h2 className="text-[2.5em] sm:text-[4.5em] font-montserrat-bold mb-8 transition-all duration-500 ease-in-out">
             ¿Qué es ROBLESMUN?
           </h2>
 

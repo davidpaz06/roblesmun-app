@@ -17,6 +17,7 @@ import SponsorsManagement from "./views/admin/SponsorsManagement";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RegistrationsManagement from "./views/admin/RegistrationsManagement";
 import CommitteesManagement from "./views/admin/CommitteesManagement";
+import DelegatesManagement from "./views/admin/DelegatesManagement";
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640),
@@ -51,6 +52,7 @@ function App() {
                 path="/registrations/checkout"
                 element={<Registrations />}
               />
+              {/* <Route path="*" element={<div>404 Not Found</div>} /> */}
             </Routes>
           </main>
 
@@ -85,6 +87,15 @@ function App() {
               element={
                 <ProtectedRoute requireAdmin={true}>
                   <CommitteesManagement />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/delegates"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <DelegatesManagement />
                 </ProtectedRoute>
               }
             />

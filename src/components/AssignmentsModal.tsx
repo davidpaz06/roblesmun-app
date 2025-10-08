@@ -276,7 +276,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div className="bg-black/10 rounded-xl border border-white/20 shadow-lg backdrop-blur-lg p-8 max-w-8xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-montserrat-bold text-white">
@@ -298,7 +297,6 @@ const AssignmentsModal: FC<AssignmentsModalProps> = ({
           </button>
         </div>
 
-        {/* Validación en Tiempo Real */}
         {hasValidationIssues && (
           <div className="mb-6 space-y-3">
             {validationErrors.length > 0 && (

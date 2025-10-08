@@ -159,6 +159,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       await AuthService.logout();
       localStorage.removeItem("authToken");
       localStorage.removeItem("userData");
+      localStorage.removeItem("rememberMe");
       setUser(null);
     } catch (error) {
       console.error("Logout error:", error);

@@ -57,7 +57,6 @@ const SponsorsManagement: FC = () => {
     }
   };
 
-  // Función para ordenar patrocinadores
   const sortSponsors = (
     sponsorsList: Sponsor[],
     option: SortOption
@@ -90,7 +89,6 @@ const SponsorsManagement: FC = () => {
     }
   };
 
-  // ✅ Función para filtrar patrocinadores
   const filterSponsors = (
     sponsorsList: Sponsor[],
     search: string
@@ -115,12 +113,10 @@ const SponsorsManagement: FC = () => {
     setSortOption(option);
   };
 
-  // ✅ Manejar cambio de imagen con validaciones
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validaciones
     if (!file.type.startsWith("image/")) {
       alert("Por favor selecciona un archivo de imagen válido");
       return;
@@ -133,7 +129,6 @@ const SponsorsManagement: FC = () => {
 
     setImageFile(file);
 
-    // Crear preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target?.result as string);
@@ -167,7 +162,6 @@ const SponsorsManagement: FC = () => {
     try {
       let logoUrl = formData.logo;
 
-      // ✅ Subir imagen si hay una nueva
       if (imageFile) {
         try {
           logoUrl = await SupabaseStorage.uploadSponsorImage(imageFile);
@@ -187,7 +181,6 @@ const SponsorsManagement: FC = () => {
       };
 
       if (editingId) {
-        // ✅ Si hay imagen anterior y se cambió, eliminar la anterior
         const currentSponsor = sponsors.find((s) => s.id === editingId);
         if (
           currentSponsor?.logo &&

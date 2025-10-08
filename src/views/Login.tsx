@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useAuth } from "../context/AuthContext";
 import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 import type { LoginData } from "../interfaces/LoginData";
-import type { FacultyCode } from "../interfaces/FacultyCode"; // Importar la interfaz correcta
+import type { FacultyCode } from "../interfaces/FacultyCode";
 import { FirestoreService } from "../firebase/firestore";
 
 const loginSchema = z.object({
@@ -78,13 +78,15 @@ const Login: FC = () => {
     [facultyCodeValid, setFacultyCodeValid] = useState<boolean | null>(null),
     [facultyCodeChecking, setFacultyCodeChecking] = useState<boolean>(false),
     [institutions, setInstitutions] = useState<string[]>([]),
+    [rememberMe, setRememberMe] = useState<boolean>(
+      !!localStorage.getItem("rememberMe")
+    ),
     facultyCodeDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const getInstitutions = async (): Promise<string[]> => {
     try {
       const response = await FirestoreService.getAll("facultyCodes");
 
-      // Solución más directa con type assertion
       const institutionNames = (response as FacultyCode[])
         .filter((doc) => doc && typeof doc === "object" && "institution" in doc)
         .map((doc) => (doc as FacultyCode).institution)
@@ -105,6 +107,18 @@ const Login: FC = () => {
     };
 
     loadInstitutions();
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("rememberMe");
+    if (saved) {
+      const creds = JSON.parse(saved);
+      setFormData((prev) => ({
+        ...prev,
+        email: creds.email || "",
+        password: "", // deja vacío
+      }));
+    }
   }, []);
 
   const formFields: Array<FormFields> = [
@@ -235,6 +249,18 @@ const Login: FC = () => {
 
     if (!validateForm()) {
       return;
+    }
+
+    if (rememberMe) {
+      localStorage.setItem(
+        "rememberMe",
+        JSON.stringify({
+          email: formData.email,
+          // NO guardes la contraseña
+        })
+      );
+    } else {
+      localStorage.removeItem("rememberMe");
     }
 
     if (isRegistering) {
@@ -473,6 +499,23 @@ const Login: FC = () => {
                 {errors.submit}
               </div>
             )}
+
+            {/* Recordarme */}
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={() => setRememberMe((v) => !v)}
+                className="w-4 h-4 text-blue-600 cursor-pointer bg-glass border-gray-600 rounded focus:ring-gray-400 focus:ring-1"
+              />
+              <label
+                htmlFor="rememberMe"
+                className="text-sm font-montserrat-light cursor-pointer"
+              >
+                Recordarme
+              </label>
+            </div>
 
             <button
               type="submit"
