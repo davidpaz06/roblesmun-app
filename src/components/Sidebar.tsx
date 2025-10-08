@@ -23,7 +23,7 @@ const Sidebar: FC = () => {
   ];
 
   return (
-    <aside className="sm:hidden w-[100%] flex items-center justify-end p-4 fixed z-10">
+    <aside className="sm:hidden top-0 right-8 items-center justify-end fixed z-10">
       <button
         onClick={toggle}
         type="button"
@@ -42,7 +42,7 @@ const Sidebar: FC = () => {
       )}
 
       <div
-        className={`fixed top-0 right-0 z-50 w-72 h-screen bg-[#d53137] shadow-md transition-transform duration-300 ease-in-out
+        className={`fixed top-0 right-0 z-50 w-full max-w-xs min-h-screen bg-[#d53137] shadow-md transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "translate-x-full"}`}
         role="dialog"
         aria-modal="true"

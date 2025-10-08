@@ -47,6 +47,19 @@ const sortOptions: Array<{
   { value: "year-desc", label: "Año ↓", icon: <FaSortNumericUp /> },
 ];
 
+const tableHeaders = [
+  "Nombre",
+  "Apellido",
+  "Año",
+  "Sección",
+  "Inscrito en",
+  "Estado",
+  "Monto (Bs)",
+  "Monto (USD)",
+  "Tasa",
+  "Acciones",
+];
+
 const initialForm: Omit<Delegate, "id"> = {
   nombre: "",
   apellido: "",
@@ -568,36 +581,11 @@ const DelegatesManagement: FC = () => {
                   <table className="min-w-max w-full bg-glass rounded-lg overflow-hidden text-sm sm:text-base">
                     <thead>
                       <tr className="bg-[#181818] text-[#d53137] text-left">
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          Nombre
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          Apellido
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          Año
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          Sección
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          Inscrito En
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          Estado
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          Bs
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          $
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
-                          Tasa
-                        </th>
-                        <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base text-center">
-                          Acciones
-                        </th>
+                        {tableHeaders.map((header) => (
+                          <th className="py-2 px-2 sm:py-3 sm:px-4 font-montserrat-bold text-xs sm:text-base">
+                            {header}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>

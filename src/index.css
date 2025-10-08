@@ -46,6 +46,9 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 body {
@@ -54,6 +57,7 @@ body {
   min-height: 100vh;
   background: linear-gradient(180deg, #242424 0%, #101010 100%);
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 h1 {
