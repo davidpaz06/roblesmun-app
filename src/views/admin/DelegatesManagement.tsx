@@ -20,7 +20,6 @@ import {
   FaPlus,
   FaSave,
   FaTimes,
-  FaDatabase,
   FaExclamationTriangle,
   FaHome,
 } from "react-icons/fa";
@@ -274,7 +273,6 @@ const DelegatesManagement: FC = () => {
           </div>
 
           <div className="flex-col sm:flex-row items-center gap-4">
-            <FaDatabase className="text-2xl text-[#d53137]" />
             <label className="font-montserrat-bold text-lg text-gray-300">
               Colección:
             </label>
