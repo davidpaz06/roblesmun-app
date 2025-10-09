@@ -42,6 +42,8 @@ const SponsorsManagement: FC = () => {
     name: "",
     logo: "",
     description: "",
+    instagram: "",
+    web: "",
   });
 
   const fetchSponsors = async () => {
@@ -148,6 +150,8 @@ const SponsorsManagement: FC = () => {
       name: "",
       logo: "",
       description: "",
+      instagram: "",
+      web: "",
     });
     setImageFile(null);
     setImagePreview("");
@@ -178,6 +182,8 @@ const SponsorsManagement: FC = () => {
         name: formData.name,
         logo: logoUrl,
         description: formData.description,
+        instagram: formData.instagram,
+        web: formData.web,
       };
 
       if (editingId) {
@@ -226,6 +232,8 @@ const SponsorsManagement: FC = () => {
       name: sponsor.name,
       logo: sponsor.logo,
       description: sponsor.description,
+      instagram: sponsor.instagram || "",
+      web: sponsor.web || "",
     });
     setImagePreview(sponsor.logo);
     setEditingId(sponsor.id || null);
@@ -245,7 +253,6 @@ const SponsorsManagement: FC = () => {
 
     setIsLoading(true);
     try {
-      // ✅ Eliminar imagen de Storage antes de eliminar el documento
       const sponsor = sponsors.find((s) => s.id === id);
       if (sponsor?.logo) {
         try {
@@ -274,7 +281,7 @@ const SponsorsManagement: FC = () => {
   const sortOptions: Array<{
     value: SortOption;
     label: string;
-    icon: ReactElement; // ✅ Cambiar JSX.Element por ReactElement
+    icon: ReactElement;
   }> = [
     { value: "newest", label: "Recientes", icon: <FaClock /> },
     { value: "oldest", label: "Antiguos", icon: <FaClock /> },
@@ -301,7 +308,6 @@ const SponsorsManagement: FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* ✅ Buscador */}
             <input
               type="text"
               placeholder="Buscar patrocinadores..."
@@ -319,7 +325,6 @@ const SponsorsManagement: FC = () => {
           </div>
         </div>
 
-        {/* Sorting Options */}
         {!isLoading && sponsors.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <span className="text-sm text-gray-300 font-medium">
@@ -344,7 +349,6 @@ const SponsorsManagement: FC = () => {
           </div>
         )}
 
-        {/* Form */}
         {showForm && (
           <form
             onSubmit={handleSubmit}
@@ -383,6 +387,33 @@ const SponsorsManagement: FC = () => {
                     rows={8}
                     className="w-full p-3 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none resize-none"
                     placeholder="Describe al patrocinador y su contribución al evento..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-300">
+                    Instagram
+                  </label>
+                  <input
+                    name="instagram"
+                    value={formData.instagram || ""}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none"
+                    placeholder="https://instagram.com/empresa"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-300">
+                    Sitio web
+                  </label>
+                  <input
+                    type="url"
+                    name="web"
+                    value={formData.web || ""}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none"
+                    placeholder="https://empresa.com"
                   />
                 </div>
               </div>

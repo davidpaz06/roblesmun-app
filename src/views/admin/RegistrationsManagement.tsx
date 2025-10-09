@@ -18,8 +18,8 @@ import { FirestoreService } from "../../firebase/firestore";
 import RegistrationsManagementModal from "../../components/RegistrationsManagementModal";
 import AssignmentsModal from "../../components/AssignmentsModal";
 import { AssignmentsPDFGenerator } from "../../components/AssignmentsPDFGenerator";
-import { Link } from "react-router-dom"; // Agregar este import
-import { FaHome } from "react-icons/fa"; // Agregar este import
+import { Link } from "react-router-dom";
+import { FaHome } from "react-icons/fa";
 
 type SortOption =
   | "newest"
@@ -35,7 +35,6 @@ interface RegistrationWithId extends RegistrationForm {
   status?: "pending" | "verified" | "rejected";
   assignedSeats?: string[];
   assignmentDate?: string;
-  // ✅ AGREGAR: Propiedades para el PDF de asignaciones
   assignmentPdfUrl?: string;
   assignmentNotes?: string;
   assignmentValidated?: boolean;
@@ -58,6 +57,9 @@ const RegistrationsManagement: FC = () => {
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [rate, setRate] = useState<number>(0);
+  const [rateInput, setRateInput] = useState<string>("");
+  const [rateLoading, setRateLoading] = useState<boolean>(false);
 
   const fetchRegistrations = async () => {
     setIsLoading(true);
@@ -234,6 +236,28 @@ const RegistrationsManagement: FC = () => {
     fetchRegistrations();
   }, []);
 
+  // Leer la tasa al montar
+  useEffect(() => {
+    const fetchRate = async () => {
+      setRateLoading(true);
+      try {
+        const doc = await FirestoreService.getById<{ rate: number }>(
+          "config",
+          "registration"
+        );
+        if (doc && typeof doc.rate === "number") {
+          setRate(doc.rate);
+          setRateInput(doc.rate.toString());
+        }
+      } catch (e) {
+        console.log("Error fetching rate:", e);
+      } finally {
+        setRateLoading(false);
+      }
+    };
+    fetchRate();
+  }, []);
+
   const sortOptions: Array<{
     value: SortOption;
     label: string;
@@ -269,6 +293,27 @@ const RegistrationsManagement: FC = () => {
       count: registrations.filter((r) => r.status === "rejected").length,
     },
   ];
+
+  // Actualizar la tasa en Firestore
+  const handleRateUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newRate = parseFloat(rateInput);
+    if (isNaN(newRate) || newRate <= 0) {
+      alert("Ingresa una tasa válida");
+      return;
+    }
+    setRateLoading(true);
+    try {
+      await FirestoreService.set("config", "registration", { rate: newRate });
+      setRate(newRate);
+      alert("Tasa actualizada correctamente");
+    } catch (e) {
+      alert("Error al actualizar la tasa");
+      console.log(e);
+    } finally {
+      setRateLoading(false);
+    }
+  };
 
   return (
     <div className="p-12 font-montserrat-light w-full">
@@ -347,6 +392,35 @@ const RegistrationsManagement: FC = () => {
       )}
 
       {isLoading && <Loader message="Cargando inscripciones..." />}
+
+      <div className="my-8 bg-glass p-6 rounded-lg max-w-md mx-auto">
+        <h2 className="text-xl font-montserrat-bold mb-4">
+          Tasa de cambio actual
+        </h2>
+        <form onSubmit={handleRateUpdate} className="flex gap-4 items-center">
+          <input
+            type="number"
+            aria-label="Tasa de cambio en Bs/USD"
+            step="0.01"
+            min="0"
+            value={rateInput}
+            onChange={(e) => setRateInput(e.target.value)}
+            className="w-32 p-2 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none"
+            disabled={rateLoading}
+          />
+          <button
+            type="submit"
+            className="bg-[#d53137] text-white px-4 py-2 rounded-lg hover:bg-[#b71c1c] transition-colors"
+            disabled={rateLoading}
+          >
+            {rateLoading ? "Guardando..." : "Actualizar"}
+          </button>
+        </form>
+        <p className="text-gray-400 mt-2 text-sm">
+          Tasa actual: <span className="font-montserrat-bold">{rate}</span>{" "}
+          Bs/USD
+        </p>
+      </div>
 
       {/* Registrations Grid */}
       {!isLoading && (
@@ -472,7 +546,6 @@ const RegistrationsManagement: FC = () => {
         </div>
       )}
 
-      {/* Empty States */}
       {!isLoading && registrations.length === 0 && (
         <div className="text-center py-16 text-gray-400">
           <FaFileAlt className="mx-auto text-8xl mb-6 opacity-30" />

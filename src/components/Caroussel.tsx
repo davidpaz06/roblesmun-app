@@ -88,14 +88,12 @@ const Caroussel: FC<CarousselProps> = ({
     [isSubmitting, setIsSubmitting] = useState<boolean>(false),
     [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // ✅ Estados para comités desde Firestore
   const [committees, setCommittees] = useState<Committee[]>([]);
   const [committeesLoading, setCommitteesLoading] = useState<boolean>(true);
   const [committeesError, setCommitteesError] = useState<string>("");
 
   const rate = useRef(180);
 
-  // ✅ Función para cargar comités desde Firestore
   const fetchCommittees = async () => {
     setCommitteesLoading(true);
     setCommitteesError("");
@@ -103,7 +101,6 @@ const Caroussel: FC<CarousselProps> = ({
       console.log("🔄 Cargando comités desde Firestore...");
       const data = await FirestoreService.getAll<Committee>("committees");
 
-      // Filtrar solo comités con cupos disponibles
       const availableCommittees = data.filter(
         (committee) => committee.seatsList && committee.seatsList.length > 0
       );

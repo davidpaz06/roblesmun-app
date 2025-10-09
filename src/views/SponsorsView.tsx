@@ -85,6 +85,28 @@ const SponsorsView: FC = () => {
                     <p className="text-lg font-montserrat-light transition-all duration-300 max-h-[300px] overflow-y-auto">
                       {sponsors[currentSlide]?.description || "Cargando..."}
                     </p>
+                    <div className="mt-4 flex flex-col gap-2">
+                      {sponsors[currentSlide]?.instagram && (
+                        <a
+                          href={sponsors[currentSlide].instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#d53137] font-montserrat-bold"
+                        >
+                          Instagram: {sponsors[currentSlide].instagram}
+                        </a>
+                      )}
+                      {sponsors[currentSlide]?.web && (
+                        <a
+                          href={sponsors[currentSlide].web}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:underline font-montserrat-bold"
+                        >
+                          Sitio web
+                        </a>
+                      )}
+                    </div>
                   </div>
 
                   <div className="sm:w-[70%] flex flex-col justify-center items-center bg-glass p-8 rounded-lg min-h-[350px]">

@@ -5,4 +5,6 @@ export interface Sponsor {
   description: string;
   createdAt?: string;
   updatedAt?: string;
+  instagram?: string;
+  web?: string;
 }
