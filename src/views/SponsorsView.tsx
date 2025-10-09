@@ -82,7 +82,7 @@ const SponsorsView: FC = () => {
                     <h3 className="text-2xl font-montserrat-bold mb-4">
                       {sponsors[currentSlide]?.name || "Cargando..."}
                     </h3>
-                    <p className="text-lg font-montserrat-light transition-all duration-300">
+                    <p className="text-lg font-montserrat-light transition-all duration-300 max-h-[300px] overflow-y-auto">
                       {sponsors[currentSlide]?.description || "Cargando..."}
                     </p>
                   </div>
