@@ -137,20 +137,15 @@ const RegistrationsView: FC = () => {
 
     if (!areRegistrationsAvailable()) {
       return (
-        <div className="px-10 py-4 bg-orange-900/20 border border-orange-600 font-montserrat-bold rounded-xl shadow-lg text-center max-w-lg">
-          <div className="flex items-center gap-2 justify-center mb-3">
-            <FaClock className="text-orange-400 text-2xl" />
-            <span className="text-orange-300 text-lg">
-              Inscripciones próximamente
-            </span>
-          </div>
-          <p className="text-sm text-gray-300 font-montserrat-light leading-relaxed">
+        <div className="w-full mt-4 p-4 bg-blue-900/20 border border-blue-600 rounded-lg">
+          <h3 className="text-blue-300 font-montserrat-bold mb-2 flex items-center gap-2">
+            <FaClock />
+            Estado actual de las inscripciones
+          </h3>
+          <p className="text-sm text-blue-200 font-montserrat-light">
             {committees.length === 0
-              ? "Los comités aún no han sido publicados. Pronto comenzará la fase de inscripción."
-              : "Todos los cupos están ocupados por el momento. Te notificaremos cuando haya disponibilidad."}
-          </p>
-          <p className="text-xs text-gray-400 font-montserrat-light mt-2">
-            Mantente atento a nuestras redes sociales para más actualizaciones.
+              ? "Los comités están siendo preparados por nuestro equipo académico. Una vez estén listos, podrás ver toda la información y realizar tu inscripción."
+              : "Todos los cupos han sido asignados temporalmente. Algunos podrían liberarse, así que mantente atento a las actualizaciones."}
           </p>
         </div>
       );
@@ -192,6 +187,13 @@ const RegistrationsView: FC = () => {
 
   return (
     <>
+      <meta title="ROBLESMUN - Inscripciones" />
+      <meta
+        name="registrations"
+        content="Inscripciones para XVII edición de ROBLESMUN"
+      />
+      <title>ROBLESMUN - Inscripciones</title>
+
       <section className="text-[#f0f0f0] w-[90%] sm:pt-32 flex justify-center font-montserrat-light">
         <div className="w-full max-w-[1200px] px-4">
           <h2 className="sm:text-[3.5em] text-[2.5em] my-4 font-montserrat-bold transition-all duration-500 ease-in-out">
@@ -264,20 +266,6 @@ const RegistrationsView: FC = () => {
               <FaWhatsapp className="inline-block mr-2" size={24} />
               Contactar por Whatsapp
             </a>
-
-            {!areRegistrationsAvailable() && !isLoadingCommittees && (
-              <div className="w-full mt-4 p-4 bg-blue-900/20 border border-blue-600 rounded-lg">
-                <h3 className="text-blue-300 font-montserrat-bold mb-2 flex items-center gap-2">
-                  <FaClock />
-                  Estado actual de las inscripciones
-                </h3>
-                <p className="text-sm text-blue-200 font-montserrat-light">
-                  {committees.length === 0
-                    ? "Los comités están siendo preparados por nuestro equipo académico. Una vez estén listos, podrás ver toda la información y realizar tu inscripción."
-                    : "Todos los cupos han sido asignados temporalmente. Algunos podrían liberarse, así que mantente atento a las actualizaciones."}
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </section>

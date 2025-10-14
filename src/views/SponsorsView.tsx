@@ -151,7 +151,7 @@ const SponsorsView: FC = () => {
                       Verificar nuevamente
                     </button>
 
-                    <p className="text-xs text-gray-500 font-montserrat-light">
+                    <p className="text-xs text-gray-400 font-montserrat-light">
                       Mantente atento a nuestras redes sociales para las últimas
                       actualizaciones
                     </p>
