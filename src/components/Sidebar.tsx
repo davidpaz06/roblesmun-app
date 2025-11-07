@@ -23,14 +23,14 @@ const Sidebar: FC = () => {
   ];
 
   return (
-    <aside className="sm:hidden top-0 right-8 items-center justify-end fixed z-10">
+    <aside className="sm:hidden top-0 right-4 items-center justify-end fixed z-10">
       <button
         onClick={toggle}
         type="button"
         aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
         className="pointer-events-auto z-50 p-4 rounded cursor-pointer transition-colors"
       >
-        <CiMenuBurger size={40} />
+        <CiMenuBurger size={32} />
       </button>
 
       {isOpen && (
