@@ -1,7 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { FileObject } from "@supabase/storage-js";
 
-// ✅ CORRECTO - URL base del proyecto (sin .storage)
 const supabaseUrl = "https://qogwzwobubeuenmcjeao.supabase.co";
 const supabaseAnonKey =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZ3d6d29idWJldWVubWNqZWFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0OTYyNzUsImV4cCI6MjA3NTA3MjI3NX0.Tj_zOTsWpalc4blA35EdQ6C2Q0qH_GbErN0fpOR3dDM";
@@ -303,6 +302,107 @@ export class SupabaseStorage {
     } catch (error) {
       console.error("Error in listFiles:", error);
       return [];
+    }
+  }
+
+  // ✅ Método para subir fotos de prensa
+  static async uploadPressImage(file: File): Promise<string> {
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}.${fileExt}`;
+
+      console.log("📄 Subiendo imagen de prensa:", fileName);
+
+      if (!file.type.startsWith("image/")) {
+        throw new Error("El archivo debe ser una imagen");
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("La imagen no debe superar los 10MB");
+      }
+
+      const { error } = await supabase.storage
+        .from("press")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (error) {
+        throw new Error(`Error uploading press image: ${error.message}`);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("press")
+        .getPublicUrl(fileName);
+
+      console.log("✅ Imagen de prensa subida:", urlData.publicUrl);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Error in uploadPressImage:", error);
+      throw error;
+    }
+  }
+
+  // ✅ Método para subir videos de prensa
+  static async uploadPressVideo(file: File): Promise<string> {
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}.${fileExt}`;
+
+      console.log("📄 Subiendo video de prensa:", fileName);
+
+      if (!file.type.startsWith("video/")) {
+        throw new Error("El archivo debe ser un video");
+      }
+
+      if (file.size > 100 * 1024 * 1024) {
+        throw new Error("El video no debe superar los 100MB");
+      }
+
+      const { error } = await supabase.storage
+        .from("press")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (error) {
+        throw new Error(`Error uploading press video: ${error.message}`);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("press")
+        .getPublicUrl(fileName);
+
+      console.log("✅ Video de prensa subido:", urlData.publicUrl);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Error in uploadPressVideo:", error);
+      throw error;
+    }
+  }
+
+  // ✅ Método para eliminar archivos de prensa
+  static async deletePressFile(url: string): Promise<void> {
+    try {
+      const fileName = url.split("/").pop();
+      if (!fileName) return;
+
+      const { error } = await supabase.storage.from("press").remove([fileName]);
+
+      if (error) {
+        throw new Error(`Error deleting press file: ${error.message}`);
+      }
+
+      console.log("✅ Archivo de prensa eliminado");
+    } catch (error) {
+      console.error("Error in deletePressFile:", error);
+      throw error;
     }
   }
 }
