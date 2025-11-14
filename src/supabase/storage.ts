@@ -305,11 +305,14 @@ export class SupabaseStorage {
     }
   }
 
-  // ✅ Método para subir fotos de prensa
-  static async uploadPressImage(file: File): Promise<string> {
+  static async uploadPressImage(
+    file: File,
+    sectionBucket?: string
+  ): Promise<string> {
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random()
+      const folder = sectionBucket || "general";
+      const fileName = `${folder}/${Date.now()}-${Math.random()
         .toString(36)
         .substring(2)}.${fileExt}`;
 
@@ -324,7 +327,7 @@ export class SupabaseStorage {
       }
 
       const { error } = await supabase.storage
-        .from("press")
+        .from("press") // ✅ Bucket único
         .upload(fileName, file, {
           cacheControl: "3600",
           upsert: true,
@@ -347,10 +350,14 @@ export class SupabaseStorage {
   }
 
   // ✅ Método para subir videos de prensa
-  static async uploadPressVideo(file: File): Promise<string> {
+  static async uploadPressVideo(
+    file: File,
+    sectionBucket?: string
+  ): Promise<string> {
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random()
+      const folder = sectionBucket || "general"; // Carpeta basada en sección
+      const fileName = `${folder}/${Date.now()}-${Math.random()
         .toString(36)
         .substring(2)}.${fileExt}`;
 
@@ -365,7 +372,7 @@ export class SupabaseStorage {
       }
 
       const { error } = await supabase.storage
-        .from("press")
+        .from("press") // ✅ Bucket único
         .upload(fileName, file, {
           cacheControl: "3600",
           upsert: true,
@@ -387,19 +394,21 @@ export class SupabaseStorage {
     }
   }
 
-  // ✅ Método para eliminar archivos de prensa
   static async deletePressFile(url: string): Promise<void> {
     try {
-      const fileName = url.split("/").pop();
-      if (!fileName) return;
+      const urlParts = url.split("/storage/v1/object/public/press/");
+      if (urlParts.length < 2) {
+        throw new Error("Invalid press file URL format");
+      }
+      const filePath = urlParts[1];
 
-      const { error } = await supabase.storage.from("press").remove([fileName]);
+      const { error } = await supabase.storage.from("press").remove([filePath]);
 
       if (error) {
         throw new Error(`Error deleting press file: ${error.message}`);
       }
 
-      console.log("✅ Archivo de prensa eliminado");
+      console.log("✅ Archivo de prensa eliminado:", filePath);
     } catch (error) {
       console.error("Error in deletePressFile:", error);
       throw error;

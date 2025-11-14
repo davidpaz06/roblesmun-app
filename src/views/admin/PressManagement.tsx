@@ -6,10 +6,10 @@ import {
   type FormEvent,
 } from "react";
 import type { PressItem } from "../../interfaces/PressItem";
+import type { PressSection } from "../../interfaces/PressSection";
 import {
   FaTrash,
   FaEdit,
-  FaPlus,
   FaImage,
   FaSave,
   FaTimes,
@@ -19,7 +19,6 @@ import {
   FaHome,
   FaVideo,
   FaPlay,
-  FaFolderPlus,
   FaFolder,
 } from "react-icons/fa";
 import Loader from "../../components/Loader";
@@ -45,6 +44,7 @@ const PressManagement: FC = () => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [showSectionManager, setShowSectionManager] = useState<boolean>(false);
   const [newSectionName, setNewSectionName] = useState<string>("");
+  const [sections, setSections] = useState<PressSection[]>([]);
 
   const [formData, setFormData] = useState<PressItem>({
     edition: "XVII",
@@ -63,6 +63,17 @@ const PressManagement: FC = () => {
       console.error("Error fetching press items:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchSections = async () => {
+    try {
+      const data = await FirestoreService.getAll<PressSection>("pressSections");
+      setSections(data);
+      console.log("✅ Secciones cargadas desde Firestore:", data);
+    } catch (error) {
+      console.error("Error fetching sections:", error);
+      setSections([]);
     }
   };
 
@@ -184,11 +195,21 @@ const PressManagement: FC = () => {
       if (mediaFile) {
         try {
           setUploadProgress(30);
+
+          const sectionBucket = formatToBucket(formData.section);
+
           if (formData.type === "photo") {
-            mediaUrl = await SupabaseStorage.uploadPressImage(mediaFile);
+            mediaUrl = await SupabaseStorage.uploadPressImage(
+              mediaFile,
+              sectionBucket
+            );
           } else {
-            mediaUrl = await SupabaseStorage.uploadPressVideo(mediaFile);
+            mediaUrl = await SupabaseStorage.uploadPressVideo(
+              mediaFile,
+              sectionBucket
+            );
           }
+
           setUploadProgress(100);
           console.log("✅ Archivo subido:", mediaUrl);
         } catch (uploadError) {
@@ -207,7 +228,7 @@ const PressManagement: FC = () => {
         url: mediaUrl,
         title: formData.title,
         section: formData.section,
-        sectionBucket: sectionBucket,
+        sectionBucket: sectionBucket, // ✅ Guardar bucket formateado
       };
 
       if (editingId) {
@@ -244,7 +265,6 @@ const PressManagement: FC = () => {
       setUploadProgress(0);
     }
   };
-
   const handleEdit = (item: PressItem) => {
     setFormData({
       edition: item.edition,
@@ -298,54 +318,68 @@ const PressManagement: FC = () => {
       return;
     }
 
-    const sectionExists = availableSections.some(
-      (s) => s.toLowerCase() === newSectionName.toLowerCase()
-    );
-
-    if (sectionExists) {
-      alert("Esta sección ya existe");
-      return;
-    }
-
     const bucketName = formatToBucket(newSectionName);
+    try {
+      const sectionExists = sections.some(
+        (s) => s.bucket.toLowerCase() === bucketName.toLowerCase()
+      );
 
-    console.log(
-      `✅ Sección creada: "${newSectionName}" → Bucket: "${bucketName}"`
-    );
+      if (sectionExists) {
+        alert("Esta sección ya existe");
+        return;
+      }
 
-    alert(
-      `Sección "${newSectionName}" creada exitosamente.\nBucket: ${bucketName}`
-    );
+      const sectionData: PressSection = {
+        name: newSectionName.trim(),
+        bucket: bucketName,
+        createdAt: new Date().toISOString(),
+      };
 
-    setNewSectionName("");
-    setShowSectionManager(false);
+      await FirestoreService.add("pressSections", sectionData);
+
+      console.log(
+        `✅ Sección guardada en Firestore: "${newSectionName}" → Bucket: "${bucketName}"`
+      );
+
+      alert(
+        `Sección "${newSectionName}" creada exitosamente.\nBucket: ${bucketName}`
+      );
+
+      setNewSectionName("");
+      setShowSectionManager(false);
+
+      await fetchSections();
+    } catch (error) {
+      console.error("Error creando sección:", error);
+      alert("Error al crear la sección: " + (error as Error).message);
+    }
   };
 
   const handleDeleteSection = async (sectionName: string) => {
-    const itemsInSection = pressItems.filter(
-      (item) => item.section === sectionName
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que deseas eliminar la sección "${sectionName}"? Esta acción no eliminará los archivos asociados.`
     );
+    if (!confirmDelete) return;
 
-    if (itemsInSection.length > 0) {
-      const confirmDelete = window.confirm(
-        `La sección "${sectionName}" tiene ${itemsInSection.length} archivo(s). ¿Deseas eliminarla junto con todos sus archivos?`
-      );
-      if (!confirmDelete) return;
+    try {
+      const sectionToDelete = sections.find((s) => s.name === sectionName);
 
-      // Eliminar todos los archivos de esta sección
-      for (const item of itemsInSection) {
-        if (item.id) {
-          await handleDelete(item.id);
-        }
+      if (!sectionToDelete || !sectionToDelete.id) {
+        alert("Sección no encontrada.");
+        return;
       }
+      await FirestoreService.delete("pressSections", sectionToDelete.id);
+      alert(`Sección "${sectionName}" eliminada exitosamente.`);
+      await fetchSections();
+    } catch (error) {
+      console.error("Error al eliminar sección:", error);
+      alert("Error al eliminar la sección: " + (error as Error).message);
     }
-
-    alert(`Sección "${sectionName}" eliminada`);
-    await fetchPressItems();
   };
 
   useEffect(() => {
     fetchPressItems();
+    fetchSections();
   }, []);
 
   const sortOptions: Array<{
@@ -359,9 +393,11 @@ const PressManagement: FC = () => {
     { value: "reverse-alphabetical", label: "Z-A", icon: <FaSortAlphaUp /> },
   ];
 
-  // Obtener secciones únicas
   const availableSections = Array.from(
-    new Set(pressItems.map((item) => item.section))
+    new Set([
+      ...sections.map((s) => s.name),
+      ...pressItems.map((item) => item.section),
+    ])
   ).sort();
 
   return (
@@ -394,13 +430,11 @@ const PressManagement: FC = () => {
               onClick={() => setShowForm(!showForm)}
               className="bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#b71c1c] transition-colors"
             >
-              <FaPlus />
               {showForm ? "Cancelar" : "Nuevo Archivo"}
             </button>
           </div>
         </div>
 
-        {/* Gestión de secciones */}
         {!isLoading && (
           <div className="mb-8 bg-glass p-6 rounded-lg">
             <div className="flex justify-between items-center mb-4">
@@ -412,7 +446,6 @@ const PressManagement: FC = () => {
                 onClick={() => setShowSectionManager(!showSectionManager)}
                 className="bg-[#d53137] cursor-pointer text-white px-4 py-2 rounded-lg hover:bg-[#b71c1c] transition-colors flex items-center gap-2"
               >
-                <FaFolderPlus />
                 {showSectionManager ? "Cancelar" : "Nueva Sección"}
               </button>
             </div>
