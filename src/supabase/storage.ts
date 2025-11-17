@@ -327,7 +327,7 @@ export class SupabaseStorage {
       }
 
       const { error } = await supabase.storage
-        .from("press") // ✅ Bucket único
+        .from("press")
         .upload(fileName, file, {
           cacheControl: "3600",
           upsert: true,
@@ -349,22 +349,44 @@ export class SupabaseStorage {
     }
   }
 
-  // ✅ Método para subir videos de prensa
   static async uploadPressVideo(
     file: File,
     sectionBucket?: string
   ): Promise<string> {
     try {
-      const fileExt = file.name.split(".").pop();
-      const folder = sectionBucket || "general"; // Carpeta basada en sección
+      const fileExt = file.name.split(".").pop()?.toLowerCase();
+      const folder = sectionBucket || "general";
       const fileName = `${folder}/${Date.now()}-${Math.random()
         .toString(36)
         .substring(2)}.${fileExt}`;
 
       console.log("📄 Subiendo video de prensa:", fileName);
 
-      if (!file.type.startsWith("video/")) {
-        throw new Error("El archivo debe ser un video");
+      const allowedVideoTypes = [
+        "video/mp4",
+        "video/quicktime",
+        "video/webm",
+        "video/x-matroska",
+      ];
+
+      const allowedExtensions = ["mp4", "mov", "webm", "mkv", "avi"];
+
+      const isValidByType = allowedVideoTypes.includes(file.type);
+      const isValidByExt = allowedExtensions.includes(fileExt || "");
+
+      if (!isValidByType && !isValidByExt) {
+        throw new Error(
+          `Formato no soportado: ${file.name}\nTipo detectado: ${
+            file.type || "desconocido"
+          }`
+        );
+      }
+
+      // ⚠️ Advertencia si el tipo MIME no coincide pero la extensión es válida
+      if (!isValidByType && isValidByExt) {
+        console.warn(
+          `⚠️ Tipo MIME no detectado o incorrecto (${file.type}), pero la extensión .${fileExt} es válida. Continuando...`
+        );
       }
 
       if (file.size > 100 * 1024 * 1024) {
@@ -372,7 +394,7 @@ export class SupabaseStorage {
       }
 
       const { error } = await supabase.storage
-        .from("press") // ✅ Bucket único
+        .from("press")
         .upload(fileName, file, {
           cacheControl: "3600",
           upsert: true,

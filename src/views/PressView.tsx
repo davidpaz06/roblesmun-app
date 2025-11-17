@@ -1,9 +1,18 @@
 import type { FC } from "react";
 import { useState, useEffect } from "react";
 import Loader from "../components/Loader";
-import { FaExclamationTriangle, FaClock, FaPlay } from "react-icons/fa";
+import {
+  FaExclamationTriangle,
+  FaClock,
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
 import { FirestoreService } from "../firebase/firestore";
 import type { PressItem } from "../interfaces/PressItem";
+import XButton from "../components/XButton";
+import MediaGallery from "../components/MediaGallery";
+
+const ITEMS_PER_PAGE = 9;
 
 const PressView: FC = () => {
   const [pressItems, setPressItems] = useState<PressItem[]>([]);
@@ -11,6 +20,9 @@ const PressView: FC = () => {
   const [hasError, setHasError] = useState(false);
   const [selectedEdition, setSelectedEdition] = useState<string>("XVII");
   const [availableEditions, setAvailableEditions] = useState<string[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<PressItem | null>(null);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState<Record<string, number>>({}); // Por sección
 
   const fetchPressItems = async () => {
     setIsLoading(true);
@@ -22,7 +34,6 @@ const PressView: FC = () => {
 
       setPressItems(data);
 
-      // Obtener ediciones únicas
       const editions = Array.from(
         new Set(data.map((item) => item.edition))
       ).sort((a, b) => b.localeCompare(a));
@@ -42,14 +53,47 @@ const PressView: FC = () => {
 
   useEffect(() => {
     fetchPressItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filtrar por edición seleccionada
+  const handleMediaClick = (item: PressItem) => {
+    setSelectedMedia(item);
+    setShowMediaModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowMediaModal(false);
+    setSelectedMedia(null);
+  };
+
+  const handleDownload = async () => {
+    if (!selectedMedia) return;
+
+    try {
+      const response = await fetch(selectedMedia.url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const extension = selectedMedia.type === "video" ? "mp4" : "jpg";
+      link.download = `${selectedMedia.title.replace(
+        /\s+/g,
+        "-"
+      )}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      alert("Error al descargar el archivo");
+    }
+  };
+
   const filteredItems = pressItems.filter(
     (item) => item.edition === selectedEdition
   );
 
-  // Agrupar por sección
   const groupedBySection = filteredItems.reduce((acc, item) => {
     if (!acc[item.section]) {
       acc[item.section] = [];
@@ -57,6 +101,24 @@ const PressView: FC = () => {
     acc[item.section].push(item);
     return acc;
   }, {} as Record<string, PressItem[]>);
+
+  // ✅ Función para obtener items paginados por sección
+  const getPaginatedItems = (section: string, items: PressItem[]) => {
+    const page = currentPage[section] || 1;
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return items.slice(startIndex, endIndex);
+  };
+
+  // ✅ Función para cambiar de página
+  const handlePageChange = (section: string, newPage: number) => {
+    setCurrentPage((prev) => ({ ...prev, [section]: newPage }));
+    // Scroll suave a la sección
+    const sectionElement = document.getElementById(`section-${section}`);
+    if (sectionElement) {
+      sectionElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   return (
     <>
@@ -124,9 +186,9 @@ const PressView: FC = () => {
             ) : (
               <>
                 {/* Filtro de ediciones */}
-                {availableEditions.length > 1 && (
+                {availableEditions.length > 0 && (
                   <div className="flex gap-4 mb-8 flex-wrap">
-                    <span className="text-gray-300 font-montserrat-bold">
+                    <span className="text-gray-300 text-center font-montserrat-bold">
                       Edición:
                     </span>
                     {availableEditions.map((edition) => (
@@ -145,52 +207,94 @@ const PressView: FC = () => {
                   </div>
                 )}
 
-                {/* Contenido agrupado por sección */}
+                {/* Contenido agrupado por sección CON PAGINACIÓN */}
                 {Object.keys(groupedBySection).length > 0 ? (
-                  Object.entries(groupedBySection).map(([section, items]) => (
-                    <div key={section} className="mb-12">
-                      <h3 className="text-2xl font-montserrat-bold mb-6 text-[#d53137]">
-                        {section}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {items.map((item, index) => (
-                          <div
-                            key={item.id || index}
-                            className="bg-glass rounded-lg overflow-hidden shadow-lg"
-                          >
-                            {item.type === "video" ? (
-                              <div className="relative">
-                                <video
-                                  className="w-full h-48 object-cover"
-                                  controls
-                                  src={item.url}
-                                  preload="metadata"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                  <FaPlay className="text-white text-4xl opacity-70" />
-                                </div>
-                              </div>
-                            ) : (
-                              <img
-                                src={item.url}
-                                alt={item.title}
-                                className="w-full h-48 object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
-                                }}
-                              />
-                            )}
-                            <div className="p-4">
-                              <h4 className="font-montserrat-bold text-sm line-clamp-2">
-                                {item.title}
-                              </h4>
+                  Object.entries(groupedBySection).map(([section, items]) => {
+                    const page = currentPage[section] || 1;
+                    const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+                    const paginatedItems = getPaginatedItems(section, items);
+
+                    return (
+                      <div
+                        key={section}
+                        id={`section-${section}`}
+                        className="mb-12"
+                      >
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-2xl font-montserrat-bold text-[#d53137]">
+                            {section}
+                          </h3>
+                          <span className="text-sm text-gray-400">
+                            {items.length} archivo
+                            {items.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+
+                        {/* Galería paginada */}
+                        <MediaGallery
+                          items={paginatedItems}
+                          onMediaClick={handleMediaClick}
+                        />
+
+                        {/* Controles de paginación */}
+                        {totalPages > 1 && (
+                          <div className="flex justify-center items-center gap-4 mt-8">
+                            <button
+                              onClick={() =>
+                                handlePageChange(section, page - 1)
+                              }
+                              disabled={page === 1}
+                              className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                              <FaChevronLeft />
+                              Anterior
+                            </button>
+
+                            <div className="flex gap-2">
+                              {Array.from(
+                                { length: totalPages },
+                                (_, i) => i + 1
+                              ).map((pageNum) => (
+                                <button
+                                  key={pageNum}
+                                  onClick={() =>
+                                    handlePageChange(section, pageNum)
+                                  }
+                                  className={`px-4 py-2 rounded-lg transition-colors ${
+                                    page === pageNum
+                                      ? "bg-[#d53137] text-white"
+                                      : "bg-glass hover:bg-gray-700"
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              ))}
                             </div>
+
+                            <button
+                              onClick={() =>
+                                handlePageChange(section, page + 1)
+                              }
+                              disabled={page === totalPages}
+                              className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                              Siguiente
+                              <FaChevronRight />
+                            </button>
                           </div>
-                        ))}
+                        )}
+
+                        {/* Indicador de página actual */}
+                        {totalPages > 1 && (
+                          <p className="text-center text-sm text-gray-400 mt-4">
+                            Mostrando {(page - 1) * ITEMS_PER_PAGE + 1} -{" "}
+                            {Math.min(page * ITEMS_PER_PAGE, items.length)} de{" "}
+                            {items.length}
+                          </p>
+                        )}
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-center text-gray-400 py-8">
                     No hay contenido disponible para la edición{" "}
@@ -201,6 +305,70 @@ const PressView: FC = () => {
             )}
           </div>
         </section>
+      )}
+
+      {/* Modal de visualización */}
+      {showMediaModal && selectedMedia && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={handleCloseModal}
+        >
+          <div
+            className="relative max-w-6xl w-full flex flex-col items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-glass rounded-lg overflow-hidden max-h-[90vh] flex flex-col relative">
+              <button
+                onClick={handleCloseModal}
+                className="absolute top-4 right-4 z-10 p-2"
+                aria-label="Cerrar"
+              >
+                <XButton size={48} thickness="normal" />
+              </button>
+
+              <button
+                onClick={handleDownload}
+                className="absolute top-4 left-4 z-10 py-2 px-4 bg-glass cursor-pointer rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+                aria-label="Descargar"
+              >
+                <span className="text-white font-montserrat-light text-md">
+                  Descargar
+                </span>
+              </button>
+
+              <div className="flex-shrink-0 overflow-hidden">
+                {selectedMedia.type === "video" ? (
+                  <video
+                    className="w-full max-h-[70vh] object-contain"
+                    controls
+                    autoPlay
+                    src={selectedMedia.url}
+                  />
+                ) : (
+                  <img
+                    src={selectedMedia.url}
+                    alt={selectedMedia.title}
+                    className="w-full max-h-[70vh] object-contain"
+                  />
+                )}
+              </div>
+              <div className="p-6 bg-[#181818] font-montserrat-bold flex-shrink-0">
+                <h3 className="text-2xl mb-2">{selectedMedia.title}</h3>
+                <div className="flex gap-2 text-sm text-gray-400">
+                  <span className="bg-[#d53137] px-2 py-1 rounded">
+                    {selectedMedia.edition}
+                  </span>
+                  <span className="bg-blue-600 px-2 py-1 rounded">
+                    {selectedMedia.section}
+                  </span>
+                  <span className="bg-gray-700 px-2 py-1 rounded">
+                    {selectedMedia.type === "photo" ? "Foto" : "Video"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

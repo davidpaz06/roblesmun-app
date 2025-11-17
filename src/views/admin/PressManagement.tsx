@@ -20,6 +20,8 @@ import {
   FaVideo,
   FaPlay,
   FaFolder,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import Loader from "../../components/Loader";
 import { FirestoreService } from "../../firebase/firestore";
@@ -29,6 +31,8 @@ import { type ReactElement } from "react";
 import { formatToBucket } from "../../utils/formatToBucket";
 
 type SortOption = "newest" | "oldest" | "alphabetical" | "reverse-alphabetical";
+
+const ITEMS_PER_PAGE = 9; // ✅ Constante para paginación
 
 const PressManagement: FC = () => {
   const [pressItems, setPressItems] = useState<PressItem[]>([]);
@@ -45,6 +49,7 @@ const PressManagement: FC = () => {
   const [showSectionManager, setShowSectionManager] = useState<boolean>(false);
   const [newSectionName, setNewSectionName] = useState<string>("");
   const [sections, setSections] = useState<PressSection[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1); // ✅ Estado de página
 
   const [formData, setFormData] = useState<PressItem>({
     edition: "XVII",
@@ -135,11 +140,27 @@ const PressManagement: FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const isImage = file.type.startsWith("image/");
-    const isVideo = file.type.startsWith("video/");
+    console.log("📄 Archivo seleccionado:", file.name, "Tipo:", file.type); // ✅ Debug
+
+    // ✅ Detectar por extensión también, no solo por MIME type
+    const fileName = file.name.toLowerCase();
+    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"];
+    const videoExtensions = [".mp4", ".mov", ".webm", ".mkv", ".avi"];
+
+    const isImageByType = file.type.startsWith("image/");
+    const isVideoByType = file.type.startsWith("video/");
+    const isImageByExt = imageExtensions.some((ext) => fileName.endsWith(ext));
+    const isVideoByExt = videoExtensions.some((ext) => fileName.endsWith(ext));
+
+    const isImage = isImageByType || isImageByExt;
+    const isVideo = isVideoByType || isVideoByExt;
 
     if (!isImage && !isVideo) {
-      alert("Por favor selecciona un archivo de imagen o video válido");
+      alert(
+        `Formato no soportado.\nArchivo: ${file.name}\nTipo detectado: ${
+          file.type || "desconocido"
+        }`
+      );
       return;
     }
 
@@ -151,6 +172,12 @@ const PressManagement: FC = () => {
     if (isVideo && file.size > 100 * 1024 * 1024) {
       alert("El video no debe superar los 100MB");
       return;
+    }
+
+    if (isVideo && file.type && !file.type.startsWith("video/")) {
+      console.warn(
+        `⚠️ Tipo MIME inesperado para video: ${file.type}, pero la extensión es válida.`
+      );
     }
 
     setMediaFile(file);
@@ -228,7 +255,7 @@ const PressManagement: FC = () => {
         url: mediaUrl,
         title: formData.title,
         section: formData.section,
-        sectionBucket: sectionBucket, // ✅ Guardar bucket formateado
+        sectionBucket: sectionBucket,
       };
 
       if (editingId) {
@@ -399,6 +426,21 @@ const PressManagement: FC = () => {
       ...pressItems.map((item) => item.section),
     ])
   ).sort();
+
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortOption, searchTerm]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="p-12 font-montserrat-light w-full">
@@ -695,7 +737,7 @@ const PressManagement: FC = () => {
                             Cambiar archivo
                             <input
                               type="file"
-                              accept="image/*,video/*"
+                              accept="image/*,video/mp4,video/quicktime,video/webm,video/x-matroska"
                               onChange={handleMediaChange}
                               className="hidden"
                             />
@@ -730,7 +772,7 @@ const PressManagement: FC = () => {
                             Seleccionar archivo
                             <input
                               type="file"
-                              accept="image/*,video/*"
+                              accept="image/*,video/mp4,video/quicktime,video/webm,video/x-matroska"
                               onChange={handleMediaChange}
                               className="hidden"
                             />
@@ -739,7 +781,7 @@ const PressManagement: FC = () => {
                         <p className="text-sm text-gray-400">
                           Imágenes: Máximo 10MB • JPG, PNG, GIF, WebP
                           <br />
-                          Videos: Máximo 100MB • MP4, WebM
+                          Videos: Máximo 100MB • MP4, MOV, WebM
                         </p>
                       </div>
                     )}
@@ -796,74 +838,128 @@ const PressManagement: FC = () => {
 
         {isLoading && <Loader message="Cargando archivos..." />}
 
+        {/* ✅ Grid de archivos paginados */}
         {!isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className="p-4 bg-glass rounded-lg border border-gray-700 hover:border-[#d53137] transition-all duration-300"
-              >
-                <div className="w-full h-48 flex items-center justify-center mb-4 bg-[#101010] rounded overflow-hidden">
-                  {item.type === "photo" ? (
-                    <img
-                      src={item.url}
-                      alt={item.title}
-                      className="max-w-full max-h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA9TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI26TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
-                      }}
-                    />
-                  ) : (
-                    <div className="relative w-full h-full">
-                      <video
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 bg-glass rounded-lg border border-gray-700 hover:border-[#d53137] transition-all duration-300"
+                >
+                  {/* ...existing card content... */}
+                  <div className="w-full h-48 flex items-center justify-center mb-4 bg-[#101010] rounded overflow-hidden">
+                    {item.type === "photo" ? (
+                      <img
                         src={item.url}
-                        className="w-full h-full object-cover"
-                        preload="metadata"
+                        alt={item.title}
+                        className="max-w-full max-h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI26TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+                        }}
                       />
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <FaPlay className="text-white text-4xl opacity-70" />
+                    ) : (
+                      <div className="relative w-full h-full">
+                        <video
+                          src={item.url}
+                          className="w-full h-full object-cover"
+                          preload="metadata"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <FaPlay className="text-white text-4xl opacity-70" />
+                        </div>
                       </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-montserrat-bold line-clamp-2">
+                      {item.title}
+                    </h3>
+                    <div className="flex gap-2 text-xs text-gray-400">
+                      <span className="bg-[#d53137] px-2 py-1 rounded">
+                        {item.edition}
+                      </span>
+                      <span className="bg-blue-600 px-2 py-1 rounded">
+                        {item.section}
+                      </span>
+                      <span className="bg-gray-700 px-2 py-1 rounded">
+                        {item.type === "photo" ? "Foto" : "Video"}
+                      </span>
                     </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-gray-600">
+                    <button
+                      onClick={() => handleEdit(item)}
+                      className="flex-1 bg-glass cursor-pointer text-white px-3 py-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      <FaEdit />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id!)}
+                      className="flex-1 bg-[#d53137] cursor-pointer text-white px-3 py-2 rounded flex items-center justify-center gap-2 hover:bg-red-700 transition-colors text-sm"
+                    >
+                      <FaTrash />
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ✅ Controles de paginación */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-8">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <FaChevronLeft />
+                  Anterior
+                </button>
+
+                <div className="flex gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? "bg-[#d53137] text-white"
+                            : "bg-glass hover:bg-gray-700"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="text-lg font-montserrat-bold line-clamp-2">
-                    {item.title}
-                  </h3>
-                  <div className="flex gap-2 text-xs text-gray-400">
-                    <span className="bg-[#d53137] px-2 py-1 rounded">
-                      {item.edition}
-                    </span>
-                    <span className="bg-blue-600 px-2 py-1 rounded">
-                      {item.section}
-                    </span>
-                    <span className="bg-gray-700 px-2 py-1 rounded">
-                      {item.type === "photo" ? "Foto" : "Video"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-600">
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="flex-1 bg-glass cursor-pointer text-white px-3 py-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors text-sm"
-                  >
-                    <FaEdit />
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id!)}
-                    className="flex-1 bg-[#d53137] cursor-pointer text-white px-3 py-2 rounded flex items-center justify-center gap-2 hover:bg-red-700 transition-colors text-sm"
-                  >
-                    <FaTrash />
-                    Eliminar
-                  </button>
-                </div>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  Siguiente
+                  <FaChevronRight />
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+
+            {/* ✅ Indicador de página */}
+            {totalPages > 1 && (
+              <p className="text-center text-sm text-gray-400 mt-4">
+                Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} -{" "}
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)}{" "}
+                de {filteredItems.length}
+              </p>
+            )}
+          </>
         )}
 
         {/* {!isLoading && pressItems.length === 0 && (
@@ -903,6 +999,7 @@ const PressManagement: FC = () => {
           </div>
         )}
 
+        {/* ✅ Estadísticas */}
         <div className="mt-8 p-4 bg-glass rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
             <div>
