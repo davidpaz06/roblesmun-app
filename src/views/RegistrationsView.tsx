@@ -173,14 +173,6 @@ const RegistrationsView: FC = () => {
         >
           Inscríbete ahora
         </Link>
-        <div className="text-center">
-          <p className="text-sm text-green-400 font-montserrat-bold">
-            ✅ {committees.length} comités disponibles
-          </p>
-          <p className="text-xs text-gray-400 font-montserrat-light">
-            {availableSeatsCount} cupos disponibles en total
-          </p>
-        </div>
       </div>
     );
   };

@@ -117,7 +117,6 @@ const Caroussel: FC<CarousselProps> = ({
     }
   };
 
-  // ✅ Cargar comités al montar el componente
   useEffect(() => {
     fetchCommittees();
   }, []);
@@ -927,7 +926,7 @@ const Caroussel: FC<CarousselProps> = ({
             </div>
           )}
 
-          <div className="flex justify-between gap-4 mt-8 max-w-full">
+          <div className="flex flex-col sm:flex-row justify-between  gap-4 mt-12 max-w-full">
             <button
               onClick={
                 currentStep === 1

@@ -12,7 +12,7 @@ import type { PressItem } from "../interfaces/PressItem";
 import XButton from "../components/XButton";
 import MediaGallery from "../components/MediaGallery";
 
-const ITEMS_PER_PAGE = 9;
+const ITEMS_PER_PAGE = 6; // ✅ Cambiado de 9 a 6
 
 const PressView: FC = () => {
   const [pressItems, setPressItems] = useState<PressItem[]>([]);
@@ -22,15 +22,28 @@ const PressView: FC = () => {
   const [availableEditions, setAvailableEditions] = useState<string[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<PressItem | null>(null);
   const [showMediaModal, setShowMediaModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState<Record<string, number>>({}); // Por sección
+  const [currentPage, setCurrentPage] = useState<Record<string, number>>({});
 
   const fetchPressItems = async () => {
     setIsLoading(true);
     setHasError(false);
     try {
-      console.log("🔄 Cargando contenido de prensa desde Firestore...");
-      const data = await FirestoreService.getAll<PressItem>("press");
-      console.log("✅ Contenido obtenido:", data);
+      console.log(
+        "🔄 Cargando contenido de prensa desde Firestore (paginado)..."
+      );
+
+      // ✅ Carga paginada inicial - solo primeros 50 items
+      const { data, hasMore } = await FirestoreService.getPaginated<PressItem>(
+        "press",
+        50,
+        null,
+        "createdAt",
+        "desc"
+      );
+
+      console.log(
+        `✅ ${data.length} items cargados inicialmente, hay más: ${hasMore}`
+      );
 
       setPressItems(data);
 
@@ -102,7 +115,7 @@ const PressView: FC = () => {
     return acc;
   }, {} as Record<string, PressItem[]>);
 
-  // ✅ Función para obtener items paginados por sección
+  // ✅ Función para obtener items paginados por sección (SOLO los 6 de la página actual)
   const getPaginatedItems = (section: string, items: PressItem[]) => {
     const page = currentPage[section] || 1;
     const startIndex = (page - 1) * ITEMS_PER_PAGE;
@@ -113,7 +126,7 @@ const PressView: FC = () => {
   // ✅ Función para cambiar de página
   const handlePageChange = (section: string, newPage: number) => {
     setCurrentPage((prev) => ({ ...prev, [section]: newPage }));
-    // Scroll suave a la sección
+
     const sectionElement = document.getElementById(`section-${section}`);
     if (sectionElement) {
       sectionElement.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -207,7 +220,7 @@ const PressView: FC = () => {
                   </div>
                 )}
 
-                {/* Contenido agrupado por sección CON PAGINACIÓN */}
+                {/* Contenido paginado por sección */}
                 {Object.keys(groupedBySection).length > 0 ? (
                   Object.entries(groupedBySection).map(([section, items]) => {
                     const page = currentPage[section] || 1;
@@ -230,7 +243,7 @@ const PressView: FC = () => {
                           </span>
                         </div>
 
-                        {/* Galería paginada */}
+                        {/* ✅ MediaGallery solo recibe los 6 items de la página actual */}
                         <MediaGallery
                           items={paginatedItems}
                           onMediaClick={handleMediaClick}
@@ -284,7 +297,7 @@ const PressView: FC = () => {
                           </div>
                         )}
 
-                        {/* Indicador de página actual */}
+                        {/* Indicador de página */}
                         {totalPages > 1 && (
                           <p className="text-center text-sm text-gray-400 mt-4">
                             Mostrando {(page - 1) * ITEMS_PER_PAGE + 1} -{" "}

@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { PressItem } from "../../interfaces/PressItem";
 import type { PressSection } from "../../interfaces/PressSection";
+import type { DocumentSnapshot } from "firebase/firestore";
 import {
   FaTrash,
   FaEdit,
@@ -22,6 +23,7 @@ import {
   FaFolder,
   FaChevronLeft,
   FaChevronRight,
+  FaDownload, // ✅ Nuevo icono
 } from "react-icons/fa";
 import Loader from "../../components/Loader";
 import { FirestoreService } from "../../firebase/firestore";
@@ -29,10 +31,11 @@ import { SupabaseStorage } from "../../supabase/storage";
 import { Link } from "react-router-dom";
 import { type ReactElement } from "react";
 import { formatToBucket } from "../../utils/formatToBucket";
+import XButton from "../../components/XButton"; // ✅ Importar XButton
 
 type SortOption = "newest" | "oldest" | "alphabetical" | "reverse-alphabetical";
 
-const ITEMS_PER_PAGE = 9; // ✅ Constante para paginación
+const ITEMS_PER_PAGE = 6; // ✅ Cambiado de 9 a 6
 
 const PressManagement: FC = () => {
   const [pressItems, setPressItems] = useState<PressItem[]>([]);
@@ -49,7 +52,14 @@ const PressManagement: FC = () => {
   const [showSectionManager, setShowSectionManager] = useState<boolean>(false);
   const [newSectionName, setNewSectionName] = useState<string>("");
   const [sections, setSections] = useState<PressSection[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(1); // ✅ Estado de página
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [lastDoc, setLastDoc] = useState<DocumentSnapshot | null>(null);
+
+  // ✅ Nuevos estados para el modal
+  const [selectedMedia, setSelectedMedia] = useState<PressItem | null>(null);
+  const [showMediaModal, setShowMediaModal] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<PressItem>({
     edition: "XVII",
@@ -59,15 +69,55 @@ const PressManagement: FC = () => {
     section: "",
   });
 
-  const fetchPressItems = async () => {
-    setIsLoading(true);
+  const fetchPressItems = async (page: number = 1, append: boolean = false) => {
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
+
     try {
-      const data = await FirestoreService.getAll<PressItem>("press");
-      setPressItems(data.length > 0 ? data : []);
+      // Si hay búsqueda activa, cargar todos los items
+      if (searchTerm.trim()) {
+        const allData = await FirestoreService.getAll<PressItem>("press");
+        setPressItems(allData);
+        setHasMore(false);
+        setLastDoc(null);
+        return;
+      }
+
+      // ✅ Carga paginada con 6 items por página
+      const {
+        data,
+        lastVisible,
+        hasMore: more,
+      } = await FirestoreService.getPaginated<PressItem>(
+        "press",
+        ITEMS_PER_PAGE,
+        append ? lastDoc : null,
+        "createdAt",
+        "desc"
+      );
+
+      if (append) {
+        setPressItems((prev) => [...prev, ...data]);
+      } else {
+        setPressItems(data);
+      }
+
+      setLastDoc(lastVisible);
+      setHasMore(more);
+      console.log(
+        `✅ ${data.length} items cargados (página ${page}), hay más: ${more}`
+      );
     } catch (error) {
       console.error("Error fetching press items:", error);
+      setPressItems([]);
+      setHasMore(false);
+      setLastDoc(null);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
@@ -126,6 +176,7 @@ const PressManagement: FC = () => {
     );
   };
 
+  // ✅ Aplicar filtrado Y ordenamiento SIEMPRE
   useEffect(() => {
     const filtered = filterItems(pressItems, searchTerm);
     const sorted = sortItems(filtered, sortOption);
@@ -407,6 +458,7 @@ const PressManagement: FC = () => {
   useEffect(() => {
     fetchPressItems();
     fetchSections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sortOptions: Array<{
@@ -427,19 +479,68 @@ const PressManagement: FC = () => {
     ])
   ).sort();
 
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  // ✅ Determinar qué items mostrar según el contexto
+  const itemsToDisplay = filteredItems; // Siempre usar los items filtrados y ordenados
+  const totalPages = Math.ceil(itemsToDisplay.length / ITEMS_PER_PAGE);
 
+  // ✅ Solo paginar si hay búsqueda activa
+  const displayedItems = searchTerm.trim()
+    ? itemsToDisplay.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+      )
+    : itemsToDisplay; // Mostrar todos los items cargados (ya ordenados)
+
+  // Resetear a página 1 cuando cambian filtros
   useEffect(() => {
-    setCurrentPage(1);
+    if (searchTerm.trim()) {
+      setCurrentPage(1);
+      setLastDoc(null);
+    }
   }, [sortOption, searchTerm]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLoadMore = () => {
+    fetchPressItems(currentPage + 1, true);
+  };
+
+  // ✅ Funciones para el modal
+  const handleMediaClick = (item: PressItem) => {
+    setSelectedMedia(item);
+    setShowMediaModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowMediaModal(false);
+    setSelectedMedia(null);
+  };
+
+  const handleDownload = async () => {
+    if (!selectedMedia) return;
+
+    try {
+      const response = await fetch(selectedMedia.url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const extension = selectedMedia.type === "video" ? "mp4" : "jpg";
+      link.download = `${selectedMedia.title.replace(
+        /\s+/g,
+        "-"
+      )}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      alert("Error al descargar el archivo");
+    }
   };
 
   return (
@@ -737,7 +838,7 @@ const PressManagement: FC = () => {
                             Cambiar archivo
                             <input
                               type="file"
-                              accept="image/*,video/mp4,video/quicktime,video/webm,video/x-matroska"
+                              accept="image/*,video/mp4,video/quicktime,video/webm"
                               onChange={handleMediaChange}
                               className="hidden"
                             />
@@ -754,6 +855,11 @@ const PressManagement: FC = () => {
                             Quitar
                           </button>
                         </div>
+                        <p className="text-sm text-gray-400">
+                          Imágenes: Máximo 10MB • JPG, PNG, GIF, WebP
+                          <br />
+                          Videos: Máximo 100MB • MP4, MOV, WebM
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -772,7 +878,7 @@ const PressManagement: FC = () => {
                             Seleccionar archivo
                             <input
                               type="file"
-                              accept="image/*,video/mp4,video/quicktime,video/webm,video/x-matroska"
+                              accept="image/*,video/mp4,video/quicktime,video/webm"
                               onChange={handleMediaChange}
                               className="hidden"
                             />
@@ -838,17 +944,20 @@ const PressManagement: FC = () => {
 
         {isLoading && <Loader message="Cargando archivos..." />}
 
-        {/* ✅ Grid de archivos paginados */}
+        {/* ✅ Grid de archivos con click para visualización */}
         {!isLoading && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedItems.map((item) => (
+              {displayedItems.map((item) => (
                 <div
                   key={item.id}
                   className="p-4 bg-glass rounded-lg border border-gray-700 hover:border-[#d53137] transition-all duration-300"
                 >
-                  {/* ...existing card content... */}
-                  <div className="w-full h-48 flex items-center justify-center mb-4 bg-[#101010] rounded overflow-hidden">
+                  {/* ✅ CAMBIO: Hacer clickeable la imagen/video */}
+                  <div
+                    className="w-full h-48 flex items-center justify-center mb-4 bg-[#101010] rounded overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handleMediaClick(item)}
+                  >
                     {item.type === "photo" ? (
                       <img
                         src={item.url}
@@ -856,7 +965,7 @@ const PressManagement: FC = () => {
                         className="max-w-full max-h-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
-                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI26TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
                         }}
                       />
                     ) : (
@@ -910,113 +1019,125 @@ const PressManagement: FC = () => {
               ))}
             </div>
 
-            {/* ✅ Controles de paginación */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-8">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <FaChevronLeft />
-                  Anterior
-                </button>
-
-                <div className="flex gap-2">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          currentPage === pageNum
-                            ? "bg-[#d53137] text-white"
-                            : "bg-glass hover:bg-gray-700"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    )
-                  )}
-                </div>
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  Siguiente
-                  <FaChevronRight />
-                </button>
+            {/* Mostrar mensaje si no hay items */}
+            {displayedItems.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-400 text-lg">
+                  {searchTerm.trim()
+                    ? "No se encontraron archivos con ese término de búsqueda"
+                    : "No hay archivos disponibles"}
+                </p>
               </div>
             )}
 
-            {/* ✅ Indicador de página */}
-            {totalPages > 1 && (
+            {/* ✅ Controles de paginación mejorados */}
+            {searchTerm.trim()
+              ? // Paginación tradicional para búsqueda
+                totalPages > 1 && (
+                  <>
+                    <div className="flex justify-center items-center gap-4 mt-8">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <FaChevronLeft />
+                        Anterior
+                      </button>
+
+                      <div className="flex gap-2">
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1
+                        ).map((pageNum) => (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              currentPage === pageNum
+                                ? "bg-[#d53137] text-white"
+                                : "bg-glass hover:bg-gray-700"
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        Siguiente
+                        <FaChevronRight />
+                      </button>
+                    </div>
+
+                    <p className="text-center text-sm text-gray-400 mt-4">
+                      Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} -{" "}
+                      {Math.min(
+                        currentPage * ITEMS_PER_PAGE,
+                        itemsToDisplay.length
+                      )}{" "}
+                      de {itemsToDisplay.length}
+                    </p>
+                  </>
+                )
+              : hasMore && (
+                  <div className="flex justify-center mt-8">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      className="px-8 py-3 bg-[#d53137] text-white rounded-lg hover:bg-[#b71c1c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <FaClock className="animate-spin" />
+                          Cargando...
+                        </>
+                      ) : (
+                        <>Cargar más archivos</>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+            {!searchTerm.trim() && (
               <p className="text-center text-sm text-gray-400 mt-4">
-                Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} -{" "}
-                {Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)}{" "}
-                de {filteredItems.length}
+                Mostrando {pressItems.length} archivo
+                {pressItems.length !== 1 ? "s" : ""}
+                {hasMore && " • Hay más archivos disponibles"}
               </p>
             )}
           </>
         )}
 
-        {/* {!isLoading && pressItems.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
-            <FaImage className="mx-auto text-8xl mb-6 opacity-30" />
-            <h3 className="text-2xl font-montserrat-bold mb-2">
-              No hay archivos registrados
-            </h3>
-            <p className="text-lg mb-6">
-              Haz clic en "Nuevo Archivo" para agregar el primero
-            </p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-[#d53137] text-white px-8 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors inline-flex items-center gap-2"
-            >
-              <FaPlus />
-              Agregar Archivo
-            </button>
-          </div>
-        )} */}
-
-        {!isLoading && pressItems.length > 0 && filteredItems.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
-            <FaImage className="mx-auto text-8xl mb-6 opacity-30" />
-            <h3 className="text-2xl font-montserrat-bold mb-2">
-              No se encontraron archivos
-            </h3>
-            <p className="text-lg mb-4">
-              Intenta ajustar los términos de búsqueda
-            </p>
-            <button
-              onClick={() => setSearchTerm("")}
-              className="bg-[#d53137] text-white px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors"
-            >
-              Limpiar búsqueda
-            </button>
-          </div>
-        )}
-
-        {/* ✅ Estadísticas */}
+        {/* ✅ Estadísticas actualizadas - usar pressItems para totales reales */}
         <div className="mt-8 p-4 bg-glass rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-2xl font-montserrat-bold text-[#f0f0f0]">
-                {pressItems.length}
+                {displayedItems.length}
+                {!searchTerm.trim() && hasMore && "+"}
               </div>
-              <div className="text-sm text-gray-400">Total Archivos</div>
+              <div className="text-sm text-gray-400">
+                {!searchTerm.trim() && hasMore
+                  ? "Archivos mostrados"
+                  : searchTerm.trim()
+                  ? "Resultados"
+                  : "Total Archivos"}
+              </div>
             </div>
             <div>
               <div className="text-2xl font-montserrat-bold text-blue-400">
-                {pressItems.filter((i) => i.type === "photo").length}
+                {displayedItems.filter((i) => i.type === "photo").length}
               </div>
               <div className="text-sm text-gray-400">Fotos</div>
             </div>
             <div>
               <div className="text-2xl font-montserrat-bold text-purple-400">
-                {pressItems.filter((i) => i.type === "video").length}
+                {displayedItems.filter((i) => i.type === "video").length}
               </div>
               <div className="text-sm text-gray-400">Videos</div>
             </div>
@@ -1029,6 +1150,109 @@ const PressManagement: FC = () => {
           </div>
         </div>
       </div>
+
+      {showMediaModal && selectedMedia && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={handleCloseModal}
+        >
+          <div
+            className="relative max-w-6xl w-full flex flex-col items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-glass rounded-lg overflow-hidden max-h-[90vh] flex flex-col relative">
+              <button
+                onClick={handleCloseModal}
+                className="absolute top-4 right-4 z-10 p-2"
+                aria-label="Cerrar"
+              >
+                <XButton size={48} thickness="normal" />
+              </button>
+
+              <button
+                onClick={handleDownload}
+                className="absolute top-4 left-4 z-10 py-2 px-4 bg-glass cursor-pointer rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+                aria-label="Descargar"
+              >
+                <FaDownload className="text-white" />
+                <span className="text-white font-montserrat-light text-md">
+                  Descargar
+                </span>
+              </button>
+
+              <div className="flex-shrink-0 overflow-hidden">
+                {selectedMedia.type === "video" ? (
+                  <video
+                    className="w-full max-h-[70vh] object-contain"
+                    controls
+                    autoPlay
+                    src={selectedMedia.url}
+                  />
+                ) : (
+                  <img
+                    src={selectedMedia.url}
+                    alt={selectedMedia.title}
+                    className="w-full max-h-[70vh] object-contain"
+                  />
+                )}
+              </div>
+
+              {/* Información del archivo */}
+              <div className="p-6 bg-[#181818] font-montserrat-bold flex-shrink-0">
+                <h3 className="text-2xl mb-2">{selectedMedia.title}</h3>
+                <div className="flex gap-2 text-sm text-gray-400 flex-wrap">
+                  <span className="bg-[#d53137] px-2 py-1 rounded">
+                    {selectedMedia.edition}
+                  </span>
+                  <span className="bg-blue-600 px-2 py-1 rounded">
+                    {selectedMedia.section}
+                  </span>
+                  <span className="bg-gray-700 px-2 py-1 rounded">
+                    {selectedMedia.type === "photo" ? "Foto" : "Video"}
+                  </span>
+                  {selectedMedia.sectionBucket && (
+                    <span className="bg-green-700 px-2 py-1 rounded">
+                      Bucket: {selectedMedia.sectionBucket}
+                    </span>
+                  )}
+                </div>
+
+                {/* Botones de acción en el modal */}
+                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-600">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloseModal();
+                      handleEdit(selectedMedia);
+                    }}
+                    className="flex-1 bg-glass cursor-pointer text-white px-4 py-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                  >
+                    <FaEdit />
+                    Editar
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (
+                        window.confirm(
+                          "¿Estás seguro de que deseas eliminar este elemento?"
+                        )
+                      ) {
+                        handleCloseModal();
+                        handleDelete(selectedMedia.id!);
+                      }
+                    }}
+                    className="flex-1 bg-[#d53137] cursor-pointer text-white px-4 py-2 rounded flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
+                  >
+                    <FaTrash />
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

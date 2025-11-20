@@ -10,7 +10,12 @@ import {
   setDoc,
   QueryConstraint,
   query,
+  orderBy,
+  limit,
+  startAfter,
+  where,
   type DocumentData,
+  type DocumentSnapshot,
 } from "firebase/firestore";
 
 export class FirestoreService {
@@ -51,5 +56,108 @@ export class FirestoreService {
   static async set<T>(collectionName: string, id: string, data: T) {
     const docRef = doc(db, collectionName, id);
     await setDoc(docRef, data as DocumentData);
+  }
+
+  // ✅ Método para obtener items paginados
+  static async getPaginated<T>(
+    collectionName: string,
+    pageSize: number = 9,
+    lastDoc?: DocumentSnapshot | null,
+    orderByField: string = "createdAt",
+    orderDirection: "asc" | "desc" = "desc"
+  ): Promise<{
+    data: T[];
+    lastVisible: DocumentSnapshot | null;
+    hasMore: boolean;
+  }> {
+    try {
+      const colRef = collection(db, collectionName);
+
+      let q;
+      if (lastDoc) {
+        // Página siguiente
+        q = query(
+          colRef,
+          orderBy(orderByField, orderDirection),
+          startAfter(lastDoc),
+          limit(pageSize + 1) // +1 para saber si hay más páginas
+        );
+      } else {
+        // Primera página
+        q = query(
+          colRef,
+          orderBy(orderByField, orderDirection),
+          limit(pageSize + 1)
+        );
+      }
+
+      const snapshot = await getDocs(q);
+      const hasMore = snapshot.docs.length > pageSize;
+      const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+      const data = docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as T[];
+
+      const lastVisible = docs[docs.length - 1] || null;
+
+      return { data, lastVisible, hasMore };
+    } catch (error) {
+      console.error("Error getting paginated data:", error);
+      throw error;
+    }
+  }
+
+  static async getPaginatedWithFilter<T>(
+    collectionName: string,
+    filterField: string,
+    filterValue: any,
+    pageSize: number = 9,
+    lastDoc?: DocumentSnapshot | null,
+    orderByField: string = "createdAt",
+    orderDirection: "asc" | "desc" = "desc"
+  ): Promise<{
+    data: T[];
+    lastVisible: DocumentSnapshot | null;
+    hasMore: boolean;
+  }> {
+    try {
+      const colRef = collection(db, collectionName);
+
+      let q;
+      if (lastDoc) {
+        q = query(
+          colRef,
+          where(filterField, "==", filterValue),
+          orderBy(orderByField, orderDirection),
+          startAfter(lastDoc),
+          limit(pageSize + 1)
+        );
+      } else {
+        q = query(
+          colRef,
+          where(filterField, "==", filterValue),
+          orderBy(orderByField, orderDirection),
+          limit(pageSize + 1)
+        );
+      }
+
+      const snapshot = await getDocs(q);
+      const hasMore = snapshot.docs.length > pageSize;
+      const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+
+      const data = docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as T[];
+
+      const lastVisible = docs[docs.length - 1] || null;
+
+      return { data, lastVisible, hasMore };
+    } catch (error) {
+      console.error("Error getting filtered paginated data:", error);
+      throw error;
+    }
   }
 }

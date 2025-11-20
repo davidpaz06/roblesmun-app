@@ -78,7 +78,7 @@ const SponsorsView: FC = () => {
                 </div>
               ) : sponsors && sponsors.length > 0 ? (
                 <div className="w-full max-w-[1200px] py-8 flex flex-col-reverse sm:flex-row gap-8">
-                  <div className="sm:w-[30%] flex flex-col justify-center items-start bg-glass p-8 rounded-lg min-h-[350px]">
+                  <div className="sm:w-[30%] flex flex-col justify-center items-start bg-glass p-8 rounded-lg h-[400px]">
                     <h3 className="text-2xl font-montserrat-bold mb-4">
                       {sponsors[currentSlide]?.name || "Cargando..."}
                     </h3>
