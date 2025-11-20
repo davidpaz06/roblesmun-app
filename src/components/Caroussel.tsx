@@ -554,7 +554,7 @@ const Caroussel: FC<CarousselProps> = ({
               <button
                 key={method}
                 onClick={() => handlePaymentMethod(method)}
-                className={`cursor-pointer relative block w-full max-w-sm px-4 py-3 rounded-lg transition-all duration-200 ${
+                className={`cursor-pointer relative block w-[80%] max-w-sm px-4 py-3 rounded-lg transition-all duration-200 ${
                   formData!.paymentMethod === method
                     ? "bg-[#f0f0f0] text-[#242424] font-montserrat-bold"
                     : "bg-glass"
