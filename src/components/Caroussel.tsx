@@ -746,7 +746,7 @@ const Caroussel: FC<CarousselProps> = ({
               </div>
             </div>
 
-            <div className="bg-glass p-6 rounded-lg h-fit">
+            <div className="px-6 rounded-lg h-fit">
               <h4 className="font-montserrat-bold mb-4 text-lg">
                 Información de pago
               </h4>
@@ -906,7 +906,7 @@ const Caroussel: FC<CarousselProps> = ({
   };
 
   return (
-    <div className="bg-glass w-full my-8 px-12 py-8 rounded-lg font-montserrat-light">
+    <div className="bg-glass w-full my-8 sm:px-12 py-8 rounded-lg font-montserrat-light">
       {isLoading ? (
         <Loader message="Validando..." />
       ) : (
@@ -926,14 +926,14 @@ const Caroussel: FC<CarousselProps> = ({
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row justify-between  gap-4 mt-12 max-w-full">
+          <div className="flex flex-col sm:flex-row justify-between  gap-4 mt-12 w-full">
             <button
               onClick={
                 currentStep === 1
                   ? () => (window.location.href = "/")
                   : handlePrevious
               }
-              className="cursor-pointer px-6 py-2 bg-glass font-montserrat-light rounded-lg transition-all duration-200 hover:bg-opacity-80"
+              className="cursor-pointer px-6 py-2 mx-8 sm:mx-0 bg-glass font-montserrat-light rounded-lg transition-all duration-200 hover:bg-opacity-80"
             >
               {currentStep === 1 ? "Volver a inicio" : "Anterior"}
             </button>
@@ -947,7 +947,7 @@ const Caroussel: FC<CarousselProps> = ({
                   : handleNext
               }
               disabled={isSubmitting}
-              className={`cursor-pointer px-6 py-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80
+              className={`cursor-pointer px-6 py-2 mx-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80
               ${
                 currentStep === 4
                   ? " bg-[#f0f0f0] text-[#242424] font-montserrat-bold hover:bg-yellow-600 hover:text-[#f0f0f0]"
