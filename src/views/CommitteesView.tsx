@@ -94,12 +94,6 @@ const CommitteesView: FC = () => {
                       </strong>{" "}
                       están siendo preparados por nuestro equipo académico.
                     </p>
-
-                    <p className="text-base text-gray-400 font-montserrat-light">
-                      Pronto podrás conocer todos los detalles sobre los
-                      comités, tópicos, presidentes y cupos disponibles para
-                      esta emocionante edición.
-                    </p>
                   </div>
                 </div>
 

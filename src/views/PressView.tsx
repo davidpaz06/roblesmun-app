@@ -174,28 +174,38 @@ const PressView: FC = () => {
                 </button>
               </div>
             ) : pressItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center bg-glass p-8 text-center">
-                <div className="bg-orange-900/20 border border-orange-600 rounded-full p-6 mb-6">
-                  <FaClock className="text-orange-400 text-6xl" />
+              <>
+                <div className="flex flex-col items-center justify-center bg-glass p-8 text-center">
+                  <div className="bg-orange-900/20 border border-orange-600 rounded-full p-6 mb-6">
+                    <FaClock className="text-orange-400 text-6xl" />
+                  </div>
+                  <h3 className="text-3xl font-montserrat-bold mb-4 text-orange-300">
+                    Contenido próximamente
+                  </h3>
+                  <p className="text-lg text-gray-300 font-montserrat-light leading-relaxed max-w-2xl">
+                    Estamos preparando la galería de fotos y videos de la{" "}
+                    <strong className="text-[#d53137]">
+                      XVII edición de ROBLESMUN
+                    </strong>
+                    .
+                  </p>
                 </div>
-                <h3 className="text-3xl font-montserrat-bold mb-4 text-orange-300">
-                  Contenido próximamente
-                </h3>
-                <p className="text-lg text-gray-300 font-montserrat-light leading-relaxed max-w-2xl">
-                  Estamos preparando la galería de fotos y videos de la{" "}
-                  <strong className="text-[#d53137]">
-                    XVII edición de ROBLESMUN
-                  </strong>
-                  .
-                </p>
-                <button
-                  onClick={fetchPressItems}
-                  className="mt-6 bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors font-montserrat-bold flex items-center gap-2"
-                >
-                  <FaClock />
-                  Verificar nuevamente
-                </button>
-              </div>
+
+                <div className="my-6 flex flex-col sm:flex-row gap-4 items-center">
+                  <button
+                    onClick={fetchPressItems}
+                    className="bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors font-montserrat-bold flex items-center gap-2"
+                  >
+                    <FaClock />
+                    Verificar nuevamente
+                  </button>
+
+                  <p className="text-xs text-gray-500 font-montserrat-light">
+                    Mantente atento a nuestras redes sociales para las últimas
+                    actualizaciones
+                  </p>
+                </div>
+              </>
             ) : (
               <>
                 {/* Filtro de ediciones */}
@@ -220,7 +230,6 @@ const PressView: FC = () => {
                   </div>
                 )}
 
-                {/* Contenido paginado por sección */}
                 {Object.keys(groupedBySection).length > 0 ? (
                   Object.entries(groupedBySection).map(([section, items]) => {
                     const page = currentPage[section] || 1;
@@ -243,7 +252,6 @@ const PressView: FC = () => {
                           </span>
                         </div>
 
-                        {/* ✅ MediaGallery solo recibe los 6 items de la página actual */}
                         <MediaGallery
                           items={paginatedItems}
                           onMediaClick={handleMediaClick}

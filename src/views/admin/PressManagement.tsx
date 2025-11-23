@@ -13,7 +13,6 @@ import {
   FaEdit,
   FaImage,
   FaSave,
-  FaTimes,
   FaSortAlphaDown,
   FaSortAlphaUp,
   FaClock,
@@ -23,7 +22,9 @@ import {
   FaFolder,
   FaChevronLeft,
   FaChevronRight,
-  FaDownload, // ✅ Nuevo icono
+  FaUpload,
+  FaCheck,
+  FaTimes,
 } from "react-icons/fa";
 import Loader from "../../components/Loader";
 import { FirestoreService } from "../../firebase/firestore";
@@ -31,13 +32,14 @@ import { SupabaseStorage } from "../../supabase/storage";
 import { Link } from "react-router-dom";
 import { type ReactElement } from "react";
 import { formatToBucket } from "../../utils/formatToBucket";
-import XButton from "../../components/XButton"; // ✅ Importar XButton
+import XButton from "../../components/XButton";
 
 type SortOption = "newest" | "oldest" | "alphabetical" | "reverse-alphabetical";
 
-const ITEMS_PER_PAGE = 6; // ✅ Cambiado de 9 a 6
+const ITEMS_PER_PAGE = 6;
 
 const PressManagement: FC = () => {
+  // --- ESTADOS ---
   const [pressItems, setPressItems] = useState<PressItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<PressItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -57,7 +59,6 @@ const PressManagement: FC = () => {
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [lastDoc, setLastDoc] = useState<DocumentSnapshot | null>(null);
 
-  // ✅ Nuevos estados para el modal
   const [selectedMedia, setSelectedMedia] = useState<PressItem | null>(null);
   const [showMediaModal, setShowMediaModal] = useState<boolean>(false);
 
@@ -69,6 +70,16 @@ const PressManagement: FC = () => {
     section: "",
   });
 
+  // Estados para Carga en Lote
+  const [showBulkUpload, setShowBulkUpload] = useState<boolean>(false);
+  const [bulkFiles, setBulkFiles] = useState<File[]>([]);
+  const [bulkSection, setBulkSection] = useState<string>("");
+  const [bulkEdition, setBulkEdition] = useState<string>("XVII");
+  const [bulkUploadProgress, setBulkUploadProgress] = useState<number>(0);
+  const [isBulkUploading, setIsBulkUploading] = useState<boolean>(false);
+  const [uploadedCount, setUploadedCount] = useState<number>(0);
+
+  // --- FUNCIONES DE CARGA DE DATOS ---
   const fetchPressItems = async (page: number = 1, append: boolean = false) => {
     if (append) {
       setIsLoadingMore(true);
@@ -77,7 +88,6 @@ const PressManagement: FC = () => {
     }
 
     try {
-      // Si hay búsqueda activa, cargar todos los items
       if (searchTerm.trim()) {
         const allData = await FirestoreService.getAll<PressItem>("press");
         setPressItems(allData);
@@ -86,7 +96,6 @@ const PressManagement: FC = () => {
         return;
       }
 
-      // ✅ Carga paginada con 6 items por página
       const {
         data,
         lastVisible,
@@ -107,9 +116,6 @@ const PressManagement: FC = () => {
 
       setLastDoc(lastVisible);
       setHasMore(more);
-      console.log(
-        `✅ ${data.length} items cargados (página ${page}), hay más: ${more}`
-      );
     } catch (error) {
       console.error("Error fetching press items:", error);
       setPressItems([]);
@@ -125,19 +131,18 @@ const PressManagement: FC = () => {
     try {
       const data = await FirestoreService.getAll<PressSection>("pressSections");
       setSections(data);
-      console.log("✅ Secciones cargadas desde Firestore:", data);
     } catch (error) {
       console.error("Error fetching sections:", error);
       setSections([]);
     }
   };
 
+  // --- FUNCIONES DE FILTRADO Y ORDENAMIENTO ---
   const sortItems = (
     itemsList: PressItem[],
     option: SortOption
   ): PressItem[] => {
     const sorted = [...itemsList];
-
     switch (option) {
       case "newest":
         return sorted.sort((a, b) => {
@@ -145,20 +150,16 @@ const PressManagement: FC = () => {
           const dateB = new Date(b.createdAt || "");
           return dateB.getTime() - dateA.getTime();
         });
-
       case "oldest":
         return sorted.sort((a, b) => {
           const dateA = new Date(a.createdAt || "");
           const dateB = new Date(b.createdAt || "");
           return dateA.getTime() - dateB.getTime();
         });
-
       case "alphabetical":
         return sorted.sort((a, b) => a.title.localeCompare(b.title));
-
       case "reverse-alphabetical":
         return sorted.sort((a, b) => b.title.localeCompare(a.title));
-
       default:
         return sorted;
     }
@@ -166,7 +167,6 @@ const PressManagement: FC = () => {
 
   const filterItems = (itemsList: PressItem[], search: string): PressItem[] => {
     if (!search.trim()) return itemsList;
-
     const searchLower = search.toLowerCase();
     return itemsList.filter(
       (item) =>
@@ -176,7 +176,6 @@ const PressManagement: FC = () => {
     );
   };
 
-  // ✅ Aplicar filtrado Y ordenamiento SIEMPRE
   useEffect(() => {
     const filtered = filterItems(pressItems, searchTerm);
     const sorted = sortItems(filtered, sortOption);
@@ -187,31 +186,24 @@ const PressManagement: FC = () => {
     setSortOption(option);
   };
 
+  // --- FUNCIONES DE FORMULARIO INDIVIDUAL ---
   const handleMediaChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    console.log("📄 Archivo seleccionado:", file.name, "Tipo:", file.type); // ✅ Debug
-
-    // ✅ Detectar por extensión también, no solo por MIME type
     const fileName = file.name.toLowerCase();
     const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"];
     const videoExtensions = [".mp4", ".mov", ".webm", ".mkv", ".avi"];
 
-    const isImageByType = file.type.startsWith("image/");
-    const isVideoByType = file.type.startsWith("video/");
-    const isImageByExt = imageExtensions.some((ext) => fileName.endsWith(ext));
-    const isVideoByExt = videoExtensions.some((ext) => fileName.endsWith(ext));
-
-    const isImage = isImageByType || isImageByExt;
-    const isVideo = isVideoByType || isVideoByExt;
+    const isImage =
+      file.type.startsWith("image/") ||
+      imageExtensions.some((ext) => fileName.endsWith(ext));
+    const isVideo =
+      file.type.startsWith("video/") ||
+      videoExtensions.some((ext) => fileName.endsWith(ext));
 
     if (!isImage && !isVideo) {
-      alert(
-        `Formato no soportado.\nArchivo: ${file.name}\nTipo detectado: ${
-          file.type || "desconocido"
-        }`
-      );
+      alert("Formato no soportado.");
       return;
     }
 
@@ -223,12 +215,6 @@ const PressManagement: FC = () => {
     if (isVideo && file.size > 100 * 1024 * 1024) {
       alert("El video no debe superar los 100MB");
       return;
-    }
-
-    if (isVideo && file.type && !file.type.startsWith("video/")) {
-      console.warn(
-        `⚠️ Tipo MIME inesperado para video: ${file.type}, pero la extensión es válida.`
-      );
     }
 
     setMediaFile(file);
@@ -273,9 +259,7 @@ const PressManagement: FC = () => {
       if (mediaFile) {
         try {
           setUploadProgress(30);
-
           const sectionBucket = formatToBucket(formData.section);
-
           if (formData.type === "photo") {
             mediaUrl = await SupabaseStorage.uploadPressImage(
               mediaFile,
@@ -287,9 +271,7 @@ const PressManagement: FC = () => {
               sectionBucket
             );
           }
-
           setUploadProgress(100);
-          console.log("✅ Archivo subido:", mediaUrl);
         } catch (uploadError) {
           console.error("❌ Error subiendo archivo:", uploadError);
           alert("Error subiendo el archivo.");
@@ -299,7 +281,6 @@ const PressManagement: FC = () => {
       }
 
       const sectionBucket = formatToBucket(formData.section);
-
       const pressData: PressItem = {
         edition: formData.edition,
         type: formData.type,
@@ -314,15 +295,10 @@ const PressManagement: FC = () => {
         if (currentItem?.url && mediaFile && currentItem.url !== mediaUrl) {
           try {
             await SupabaseStorage.deletePressFile(currentItem.url);
-            console.log("✅ Archivo anterior eliminado");
           } catch (deleteError) {
-            console.warn(
-              "⚠️ No se pudo eliminar el archivo anterior:",
-              deleteError
-            );
+            console.warn("⚠️ No se pudo eliminar el archivo anterior");
           }
         }
-
         await FirestoreService.update("press", editingId, pressData);
         alert("Elemento actualizado exitosamente");
       } else {
@@ -343,6 +319,7 @@ const PressManagement: FC = () => {
       setUploadProgress(0);
     }
   };
+
   const handleEdit = (item: PressItem) => {
     setFormData({
       edition: item.edition,
@@ -354,14 +331,11 @@ const PressManagement: FC = () => {
     setMediaPreview(item.url);
     setEditingId(item.id || null);
     setShowForm(true);
+    setShowBulkUpload(false); // Cerrar carga masiva si se abre edición
   };
 
   const handleDelete = async (id: string) => {
-    if (!id) {
-      console.error("Invalid press item ID");
-      return;
-    }
-
+    if (!id) return;
     const confirmDelete = window.confirm(
       "¿Estás seguro de que deseas eliminar este elemento? Esta acción eliminará también el archivo."
     );
@@ -373,75 +347,59 @@ const PressManagement: FC = () => {
       if (item?.url) {
         try {
           await SupabaseStorage.deletePressFile(item.url);
-          console.log("✅ Archivo eliminado de Storage");
         } catch (deleteError) {
-          console.warn("⚠️ No se pudo eliminar el archivo:", deleteError);
+          console.warn("⚠️ No se pudo eliminar el archivo");
         }
       }
-
       await FirestoreService.delete("press", id);
       alert("Elemento eliminado exitosamente");
       await fetchPressItems();
     } catch (error) {
       console.error("Error al eliminar elemento:", error);
-      alert("Error al eliminar elemento: " + (error as Error).message);
+      alert("Error al eliminar elemento");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- GESTIÓN DE SECCIONES ---
   const handleCreateSection = async () => {
     if (!newSectionName.trim()) {
       alert("Ingresa un nombre válido para la sección");
       return;
     }
-
     const bucketName = formatToBucket(newSectionName);
     try {
       const sectionExists = sections.some(
         (s) => s.bucket.toLowerCase() === bucketName.toLowerCase()
       );
-
       if (sectionExists) {
         alert("Esta sección ya existe");
         return;
       }
-
       const sectionData: PressSection = {
         name: newSectionName.trim(),
         bucket: bucketName,
         createdAt: new Date().toISOString(),
       };
-
       await FirestoreService.add("pressSections", sectionData);
-
-      console.log(
-        `✅ Sección guardada en Firestore: "${newSectionName}" → Bucket: "${bucketName}"`
-      );
-
-      alert(
-        `Sección "${newSectionName}" creada exitosamente.\nBucket: ${bucketName}`
-      );
-
+      alert(`Sección "${newSectionName}" creada exitosamente.`);
       setNewSectionName("");
       setShowSectionManager(false);
-
       await fetchSections();
     } catch (error) {
       console.error("Error creando sección:", error);
-      alert("Error al crear la sección: " + (error as Error).message);
+      alert("Error al crear la sección");
     }
   };
 
   const handleDeleteSection = async (sectionName: string) => {
     const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar la sección "${sectionName}"? Esta acción no eliminará los archivos asociados.`
+      `¿Estás seguro de que deseas eliminar la sección "${sectionName}"?`
     );
     if (!confirmDelete) return;
-
     try {
       const sectionToDelete = sections.find((s) => s.name === sectionName);
-
       if (!sectionToDelete || !sectionToDelete.id) {
         alert("Sección no encontrada.");
         return;
@@ -451,26 +409,173 @@ const PressManagement: FC = () => {
       await fetchSections();
     } catch (error) {
       console.error("Error al eliminar sección:", error);
-      alert("Error al eliminar la sección: " + (error as Error).message);
+      alert("Error al eliminar la sección");
     }
   };
 
+  // --- CARGA EN LOTE ---
+  const handleBulkFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    if (files.length > 50) {
+      alert("Máximo 50 archivos por lote");
+      return;
+    }
+
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    files.forEach((file) => {
+      const fileName = file.name.toLowerCase();
+      const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+      const videoExtensions = [".mp4", ".mov", ".webm"];
+
+      const isImage =
+        file.type.startsWith("image/") ||
+        imageExtensions.some((ext) => fileName.endsWith(ext));
+      const isVideo =
+        file.type.startsWith("video/") ||
+        videoExtensions.some((ext) => fileName.endsWith(ext));
+
+      if (!isImage && !isVideo) {
+        invalidFiles.push(file.name);
+        return;
+      }
+      if (isImage && file.size > 10 * 1024 * 1024) {
+        invalidFiles.push(`${file.name} (imagen > 10MB)`);
+        return;
+      }
+      if (isVideo && file.size > 100 * 1024 * 1024) {
+        invalidFiles.push(`${file.name} (video > 100MB)`);
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (invalidFiles.length > 0) {
+      alert(
+        `Archivos no válidos (${invalidFiles.length}):\n${invalidFiles.join(
+          "\n"
+        )}`
+      );
+    }
+    setBulkFiles(validFiles);
+  };
+
+  const handleRemoveBulkFile = (index: number) => {
+    setBulkFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const resetBulkForm = () => {
+    setBulkFiles([]);
+    setBulkSection("");
+    setBulkEdition("XVII");
+    setBulkUploadProgress(0);
+    setUploadedCount(0);
+    setShowBulkUpload(false);
+  };
+
+  const handleBulkSubmit = async () => {
+    if (bulkFiles.length === 0) {
+      alert("No hay archivos seleccionados");
+      return;
+    }
+    if (!bulkSection.trim()) {
+      alert("Debes especificar una sección");
+      return;
+    }
+
+    const confirmUpload = window.confirm(
+      `¿Confirmas subir ${bulkFiles.length} archivos a "${bulkSection}"?`
+    );
+    if (!confirmUpload) return;
+
+    setIsBulkUploading(true);
+    setUploadedCount(0);
+    setBulkUploadProgress(0);
+
+    const sectionBucket = formatToBucket(bulkSection);
+    const successfulUploads: string[] = [];
+    const failedUploads: { file: string; error: string }[] = [];
+
+    try {
+      for (let i = 0; i < bulkFiles.length; i++) {
+        const file = bulkFiles[i];
+        const fileNumber = i + 1;
+
+        try {
+          let mediaUrl = "";
+          const isImage = file.type.startsWith("image/");
+          const isVideo = file.type.startsWith("video/");
+
+          if (isImage) {
+            mediaUrl = await SupabaseStorage.uploadPressImage(
+              file,
+              sectionBucket
+            );
+          } else if (isVideo) {
+            mediaUrl = await SupabaseStorage.uploadPressVideo(
+              file,
+              sectionBucket
+            );
+          } else {
+            throw new Error(`Tipo no soportado: ${file.type}`);
+          }
+
+          const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+          const pressData: PressItem = {
+            edition: bulkEdition.trim(),
+            type: isImage ? "photo" : "video",
+            url: mediaUrl,
+            title: fileNameWithoutExt,
+            section: bulkSection.trim(),
+            sectionBucket: sectionBucket,
+            createdAt: new Date().toISOString(),
+          };
+
+          await FirestoreService.add("press", pressData);
+          successfulUploads.push(file.name);
+          setUploadedCount((prev) => prev + 1);
+          setBulkUploadProgress((fileNumber / bulkFiles.length) * 100);
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        } catch (fileError) {
+          console.error(`❌ Error procesando ${file.name}:`, fileError);
+          failedUploads.push({
+            file: file.name,
+            error:
+              fileError instanceof Error
+                ? fileError.message
+                : "Error desconocido",
+          });
+        }
+      }
+
+      let message = `Carga completada:\n✅ ${successfulUploads.length} exitosos\n`;
+      if (failedUploads.length > 0) {
+        message += `❌ ${failedUploads.length} fallidos`;
+      }
+      alert(message);
+
+      if (successfulUploads.length > 0) {
+        resetBulkForm();
+        await fetchPressItems();
+      }
+    } catch (error) {
+      console.error("❌ Error crítico:", error);
+      alert("Error crítico durante la carga");
+    } finally {
+      setIsBulkUploading(false);
+      setBulkUploadProgress(0);
+      setUploadedCount(0);
+    }
+  };
+
+  // --- EFECTOS Y UTILIDADES ---
   useEffect(() => {
     fetchPressItems();
     fetchSections();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const sortOptions: Array<{
-    value: SortOption;
-    label: string;
-    icon: ReactElement;
-  }> = [
-    { value: "newest", label: "Recientes", icon: <FaClock /> },
-    { value: "oldest", label: "Antiguos", icon: <FaClock /> },
-    { value: "alphabetical", label: "A-Z", icon: <FaSortAlphaDown /> },
-    { value: "reverse-alphabetical", label: "Z-A", icon: <FaSortAlphaUp /> },
-  ];
 
   const availableSections = Array.from(
     new Set([
@@ -479,19 +584,15 @@ const PressManagement: FC = () => {
     ])
   ).sort();
 
-  // ✅ Determinar qué items mostrar según el contexto
-  const itemsToDisplay = filteredItems; // Siempre usar los items filtrados y ordenados
+  const itemsToDisplay = filteredItems;
   const totalPages = Math.ceil(itemsToDisplay.length / ITEMS_PER_PAGE);
-
-  // ✅ Solo paginar si hay búsqueda activa
   const displayedItems = searchTerm.trim()
     ? itemsToDisplay.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
       )
-    : itemsToDisplay; // Mostrar todos los items cargados (ya ordenados)
+    : itemsToDisplay;
 
-  // Resetear a página 1 cuando cambian filtros
   useEffect(() => {
     if (searchTerm.trim()) {
       setCurrentPage(1);
@@ -508,7 +609,6 @@ const PressManagement: FC = () => {
     fetchPressItems(currentPage + 1, true);
   };
 
-  // ✅ Funciones para el modal
   const handleMediaClick = (item: PressItem) => {
     setSelectedMedia(item);
     setShowMediaModal(true);
@@ -521,7 +621,6 @@ const PressManagement: FC = () => {
 
   const handleDownload = async () => {
     if (!selectedMedia) return;
-
     try {
       const response = await fetch(selectedMedia.url);
       const blob = await response.blob();
@@ -543,9 +642,28 @@ const PressManagement: FC = () => {
     }
   };
 
+  const handleMediaPreviewError = (
+    e: React.SyntheticEvent<HTMLImageElement>
+  ) => {
+    e.currentTarget.src =
+      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1zbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+  };
+
+  const sortOptions: Array<{
+    value: SortOption;
+    label: string;
+    icon: ReactElement;
+  }> = [
+    { value: "newest", label: "Recientes", icon: <FaClock /> },
+    { value: "oldest", label: "Antiguos", icon: <FaClock /> },
+    { value: "alphabetical", label: "A-Z", icon: <FaSortAlphaDown /> },
+    { value: "reverse-alphabetical", label: "Z-A", icon: <FaSortAlphaUp /> },
+  ];
+
   return (
     <div className="p-12 font-montserrat-light w-full">
       <div className="p-0">
+        {/* HEADER */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
           <div className="flex flex-col items-start">
             <h1 className="text-4xl font-montserrat-bold">Prensa</h1>
@@ -569,8 +687,24 @@ const PressManagement: FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="px-4 py-2 bg-glass border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none"
             />
+
             <button
-              onClick={() => setShowForm(!showForm)}
+              onClick={() => {
+                setShowBulkUpload(!showBulkUpload);
+                setShowForm(false);
+              }}
+              className="bg-blue-600 text-white cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+            >
+              <FaUpload />
+              Carga en Lote
+            </button>
+
+            <button
+              onClick={() => {
+                setShowForm(!showForm);
+                setShowBulkUpload(false);
+                if (!showForm) resetForm();
+              }}
               className="bg-[#d53137] text-white cursor-pointer px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#b71c1c] transition-colors"
             >
               {showForm ? "Cancelar" : "Nuevo Archivo"}
@@ -578,6 +712,179 @@ const PressManagement: FC = () => {
           </div>
         </div>
 
+        {/* SECCIÓN DE CARGA EN LOTE */}
+        {showBulkUpload && (
+          <div className="bg-glass p-6 rounded-lg mb-8 border-2 border-blue-600">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-montserrat-bold flex items-center gap-2">
+                <FaUpload className="text-blue-400" />
+                Carga en Lote
+              </h2>
+              <button
+                onClick={resetBulkForm}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <FaTimes size={24} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-300">
+                  Edición *
+                </label>
+                <input
+                  type="text"
+                  value={bulkEdition}
+                  onChange={(e) => setBulkEdition(e.target.value)}
+                  className="w-full p-3 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-blue-400 outline-none"
+                  placeholder="Ej: XVII"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-300">
+                  Sección *
+                </label>
+                <input
+                  type="text"
+                  value={bulkSection}
+                  onChange={(e) => setBulkSection(e.target.value)}
+                  list="sections-bulk"
+                  className="w-full p-3 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-blue-400 outline-none"
+                  placeholder="Ej: Inauguración"
+                />
+                <datalist id="sections-bulk">
+                  {availableSections.map((section) => (
+                    <option key={section} value={section} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
+
+            <div className="border-2 border-dashed border-blue-600 rounded-lg p-8 text-center mb-6">
+              <label className="cursor-pointer">
+                <span className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
+                  <FaUpload />
+                  Seleccionar archivos
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/mp4,video/quicktime,video/webm"
+                  onChange={handleBulkFilesChange}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-sm text-gray-400 mt-4">
+                Máximo 50 archivos por lote • Imágenes: Máximo 10MB • Videos:
+                Máximo 100MB
+              </p>
+            </div>
+
+            {bulkFiles.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-montserrat-bold mb-4">
+                  Archivos seleccionados ({bulkFiles.length})
+                </h3>
+                <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+                  {bulkFiles.map((file, index) => {
+                    const isVideo = file.type.startsWith("video/");
+                    const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+                    const isUploaded = index < uploadedCount;
+
+                    return (
+                      <div
+                        key={index}
+                        className={`bg-[#101010] p-3 rounded-lg flex items-center justify-between transition-all ${
+                          isUploaded
+                            ? "border border-green-600"
+                            : "border border-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {isUploaded ? (
+                            <FaCheck className="text-green-400 flex-shrink-0" />
+                          ) : isVideo ? (
+                            <FaVideo className="text-purple-400 flex-shrink-0" />
+                          ) : (
+                            <FaImage className="text-blue-400 flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-sm font-medium truncate ${
+                                isUploaded ? "text-green-400" : ""
+                              }`}
+                            >
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {sizeMB} MB • {isVideo ? "Video" : "Imagen"}
+                            </p>
+                          </div>
+                        </div>
+                        {!isBulkUploading && (
+                          <button
+                            onClick={() => handleRemoveBulkFile(index)}
+                            className="text-red-400 hover:text-red-600 transition-colors ml-2 flex-shrink-0"
+                          >
+                            <FaTrash size={16} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {isBulkUploading && (
+              <div className="mb-6">
+                <div className="bg-gray-700 rounded-full h-4 overflow-hidden mb-2">
+                  <div
+                    className="bg-blue-600 h-full transition-all duration-300"
+                    style={{ width: `${bulkUploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-center text-gray-300">
+                  Subiendo {uploadedCount} de {bulkFiles.length} archivos...{" "}
+                  {bulkUploadProgress.toFixed(0)}%
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                onClick={handleBulkSubmit}
+                disabled={
+                  isBulkUploading ||
+                  bulkFiles.length === 0 ||
+                  !bulkSection.trim()
+                }
+                className="flex-1 bg-blue-600 cursor-pointer text-white px-8 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:bg-blue-700"
+              >
+                {isBulkUploading ? (
+                  <>
+                    <FaClock className="animate-spin" /> Subiendo...
+                  </>
+                ) : (
+                  <>
+                    <FaSave /> Subir {bulkFiles.length} archivos
+                  </>
+                )}
+              </button>
+              <button
+                onClick={resetBulkForm}
+                disabled={isBulkUploading}
+                className="bg-glass text-[#f0f0f0] px-8 py-3 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* GESTOR DE SECCIONES */}
         {!isLoading && (
           <div className="mb-8 bg-glass p-6 rounded-lg">
             <div className="flex justify-between items-center mb-4">
@@ -634,7 +941,6 @@ const PressManagement: FC = () => {
                   const videosCount = itemsInSection.filter(
                     (i) => i.type === "video"
                   ).length;
-
                   const sampleItem = itemsInSection[0];
                   const bucketName =
                     sampleItem?.sectionBucket || formatToBucket(section);
@@ -682,15 +988,13 @@ const PressManagement: FC = () => {
             ) : (
               <div className="text-center py-8 text-gray-400">
                 <FaFolder className="mx-auto text-4xl mb-2 opacity-30" />
-                <p className="text-sm">
-                  No hay secciones creadas. Agrega archivos para crear secciones
-                  automáticamente.
-                </p>
+                <p className="text-sm">No hay secciones creadas.</p>
               </div>
             )}
           </div>
         )}
 
+        {/* FILTROS */}
         {!isLoading && pressItems.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <span className="text-sm text-gray-300 font-medium">
@@ -715,6 +1019,7 @@ const PressManagement: FC = () => {
           </div>
         )}
 
+        {/* FORMULARIO INDIVIDUAL */}
         {showForm && (
           <form
             onSubmit={handleSubmit}
@@ -775,9 +1080,6 @@ const PressManagement: FC = () => {
                       <option key={section} value={section} />
                     ))}
                   </datalist>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Escribe una nueva sección o selecciona una existente
-                  </p>
                 </div>
 
                 <div>
@@ -795,11 +1097,6 @@ const PressManagement: FC = () => {
                     <option value="photo">Foto</option>
                     <option value="video">Video</option>
                   </select>
-                  {mediaFile && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Tipo detectado automáticamente al seleccionar archivo
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -817,6 +1114,7 @@ const PressManagement: FC = () => {
                             src={mediaPreview}
                             alt="Preview"
                             className="mx-auto max-h-48 max-w-full object-contain rounded-lg"
+                            onError={handleMediaPreviewError}
                           />
                         ) : (
                           <div className="relative">
@@ -851,15 +1149,9 @@ const PressManagement: FC = () => {
                             }}
                             className="bg-glass text-[#f0f0f0] px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
                           >
-                            <FaTimes />
                             Quitar
                           </button>
                         </div>
-                        <p className="text-sm text-gray-400">
-                          Imágenes: Máximo 10MB • JPG, PNG, GIF, WebP
-                          <br />
-                          Videos: Máximo 100MB • MP4, MOV, WebM
-                        </p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -892,27 +1184,6 @@ const PressManagement: FC = () => {
                       </div>
                     )}
                   </div>
-
-                  {mediaFile && (
-                    <p className="text-sm text-gray-400 mt-2">
-                      Archivo seleccionado: {mediaFile.name} (
-                      {Math.round(mediaFile.size / 1024 / 1024)} MB)
-                    </p>
-                  )}
-
-                  {uploadProgress > 0 && uploadProgress < 100 && (
-                    <div className="mt-2">
-                      <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="bg-[#d53137] h-full transition-all duration-300"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1 text-center">
-                        Subiendo... {uploadProgress}%
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -920,22 +1191,28 @@ const PressManagement: FC = () => {
             <div className="flex gap-4 mt-8 pt-6 border-t border-gray-600">
               <button
                 type="submit"
-                disabled={isSubmitting || !mediaFile}
-                className="bg-[#d53137] cursor-pointer text-white px-8 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={isSubmitting || (!mediaFile && !editingId)}
+                className="flex-1 bg-[#d53137] text-white px-6 py-3 rounded-lg hover:bg-[#b71c1c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-montserrat-bold"
               >
-                <FaSave />
-                {isSubmitting
-                  ? "Guardando..."
-                  : editingId
-                  ? "Actualizar"
-                  : "Guardar"}
+                {isSubmitting ? (
+                  <>
+                    <FaClock className="animate-spin" />
+                    {uploadProgress > 0
+                      ? `Subiendo ${uploadProgress}%`
+                      : "Guardando..."}
+                  </>
+                ) : (
+                  <>
+                    <FaSave />
+                    {editingId ? "Actualizar" : "Guardar"}
+                  </>
+                )}
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-glass text-[#f0f0f0] px-8 py-3 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+                className="bg-glass text-[#f0f0f0] px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
               >
-                <FaTimes />
                 Cancelar
               </button>
             </div>
@@ -944,7 +1221,7 @@ const PressManagement: FC = () => {
 
         {isLoading && <Loader message="Cargando archivos..." />}
 
-        {/* ✅ Grid de archivos con click para visualización */}
+        {/* GRID DE CONTENIDO */}
         {!isLoading && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -953,7 +1230,6 @@ const PressManagement: FC = () => {
                   key={item.id}
                   className="p-4 bg-glass rounded-lg border border-gray-700 hover:border-[#d53137] transition-all duration-300"
                 >
-                  {/* ✅ CAMBIO: Hacer clickeable la imagen/video */}
                   <div
                     className="w-full h-48 flex items-center justify-center mb-4 bg-[#101010] rounded overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => handleMediaClick(item)}
@@ -965,7 +1241,7 @@ const PressManagement: FC = () => {
                         className="max-w-full max-h-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
-                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
+                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1zbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjNjY2Ii8+Cjwvc3ZnPgo=";
                         }}
                       />
                     ) : (
@@ -1019,7 +1295,6 @@ const PressManagement: FC = () => {
               ))}
             </div>
 
-            {/* Mostrar mensaje si no hay items */}
             {displayedItems.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-400 text-lg">
@@ -1030,59 +1305,28 @@ const PressManagement: FC = () => {
               </div>
             )}
 
-            {/* ✅ Controles de paginación mejorados */}
+            {/* PAGINACIÓN */}
             {searchTerm.trim()
-              ? // Paginación tradicional para búsqueda
-                totalPages > 1 && (
-                  <>
-                    <div className="flex justify-center items-center gap-4 mt-8">
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        <FaChevronLeft />
-                        Anterior
-                      </button>
-
-                      <div className="flex gap-2">
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((pageNum) => (
-                          <button
-                            key={pageNum}
-                            onClick={() => handlePageChange(pageNum)}
-                            className={`px-4 py-2 rounded-lg transition-colors ${
-                              currentPage === pageNum
-                                ? "bg-[#d53137] text-white"
-                                : "bg-glass hover:bg-gray-700"
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        ))}
-                      </div>
-
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        Siguiente
-                        <FaChevronRight />
-                      </button>
-                    </div>
-
-                    <p className="text-center text-sm text-gray-400 mt-4">
-                      Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} -{" "}
-                      {Math.min(
-                        currentPage * ITEMS_PER_PAGE,
-                        itemsToDisplay.length
-                      )}{" "}
-                      de {itemsToDisplay.length}
-                    </p>
-                  </>
+              ? totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-4 mt-8">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <FaChevronLeft /> Anterior
+                    </button>
+                    <span className="text-gray-400">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 bg-glass rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      Siguiente <FaChevronRight />
+                    </button>
+                  </div>
                 )
               : hasMore && (
                   <div className="flex justify-center mt-8">
@@ -1093,8 +1337,7 @@ const PressManagement: FC = () => {
                     >
                       {isLoadingMore ? (
                         <>
-                          <FaClock className="animate-spin" />
-                          Cargando...
+                          <FaClock className="animate-spin" /> Cargando...
                         </>
                       ) : (
                         <>Cargar más archivos</>
@@ -1102,18 +1345,10 @@ const PressManagement: FC = () => {
                     </button>
                   </div>
                 )}
-
-            {!searchTerm.trim() && (
-              <p className="text-center text-sm text-gray-400 mt-4">
-                Mostrando {pressItems.length} archivo
-                {pressItems.length !== 1 ? "s" : ""}
-                {hasMore && " • Hay más archivos disponibles"}
-              </p>
-            )}
           </>
         )}
 
-        {/* ✅ Estadísticas actualizadas - usar pressItems para totales reales */}
+        {/* FOOTER STATS */}
         <div className="mt-8 p-4 bg-glass rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
             <div>
@@ -1121,13 +1356,7 @@ const PressManagement: FC = () => {
                 {displayedItems.length}
                 {!searchTerm.trim() && hasMore && "+"}
               </div>
-              <div className="text-sm text-gray-400">
-                {!searchTerm.trim() && hasMore
-                  ? "Archivos mostrados"
-                  : searchTerm.trim()
-                  ? "Resultados"
-                  : "Total Archivos"}
-              </div>
+              <div className="text-sm text-gray-400">Total Archivos</div>
             </div>
             <div>
               <div className="text-2xl font-montserrat-bold text-blue-400">
@@ -1151,6 +1380,7 @@ const PressManagement: FC = () => {
         </div>
       </div>
 
+      {/* MODAL DE VISUALIZACIÓN */}
       {showMediaModal && selectedMedia && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
@@ -1164,22 +1394,17 @@ const PressManagement: FC = () => {
               <button
                 onClick={handleCloseModal}
                 className="absolute top-4 right-4 z-10 p-2"
-                aria-label="Cerrar"
               >
                 <XButton size={48} thickness="normal" />
               </button>
-
               <button
                 onClick={handleDownload}
-                className="absolute top-4 left-4 z-10 py-2 px-4 bg-glass cursor-pointer rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
-                aria-label="Descargar"
+                className="absolute top-4 left-4 z-10 py-2 px-4 bg-glass cursor-pointer rounded-lg hover:bg-gray-700 transition-colors"
               >
-                <FaDownload className="text-white" />
                 <span className="text-white font-montserrat-light text-md">
                   Descargar
                 </span>
               </button>
-
               <div className="flex-shrink-0 overflow-hidden">
                 {selectedMedia.type === "video" ? (
                   <video
@@ -1196,8 +1421,6 @@ const PressManagement: FC = () => {
                   />
                 )}
               </div>
-
-              {/* Información del archivo */}
               <div className="p-6 bg-[#181818] font-montserrat-bold flex-shrink-0">
                 <h3 className="text-2xl mb-2">{selectedMedia.title}</h3>
                 <div className="flex gap-2 text-sm text-gray-400 flex-wrap">
@@ -1227,8 +1450,7 @@ const PressManagement: FC = () => {
                     }}
                     className="flex-1 bg-glass cursor-pointer text-white px-4 py-2 rounded flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
                   >
-                    <FaEdit />
-                    Editar
+                    <FaEdit /> Editar
                   </button>
                   <button
                     onClick={(e) => {
@@ -1244,8 +1466,7 @@ const PressManagement: FC = () => {
                     }}
                     className="flex-1 bg-[#d53137] cursor-pointer text-white px-4 py-2 rounded flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
                   >
-                    <FaTrash />
-                    Eliminar
+                    <FaTrash /> Eliminar
                   </button>
                 </div>
               </div>
