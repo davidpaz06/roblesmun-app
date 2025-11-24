@@ -80,7 +80,7 @@ const PressManagement: FC = () => {
   const [uploadedCount, setUploadedCount] = useState<number>(0);
 
   // --- FUNCIONES DE CARGA DE DATOS ---
-  const fetchPressItems = async (page: number = 1, append: boolean = false) => {
+  const fetchPressItems = async (append: boolean = false) => {
     if (append) {
       setIsLoadingMore(true);
     } else {
@@ -295,8 +295,8 @@ const PressManagement: FC = () => {
         if (currentItem?.url && mediaFile && currentItem.url !== mediaUrl) {
           try {
             await SupabaseStorage.deletePressFile(currentItem.url);
-          } catch (deleteError) {
-            console.warn("⚠️ No se pudo eliminar el archivo anterior");
+          } catch (error) {
+            console.warn("⚠️ No se pudo eliminar el archivo anterior", error);
           }
         }
         await FirestoreService.update("press", editingId, pressData);
@@ -347,8 +347,8 @@ const PressManagement: FC = () => {
       if (item?.url) {
         try {
           await SupabaseStorage.deletePressFile(item.url);
-        } catch (deleteError) {
-          console.warn("⚠️ No se pudo eliminar el archivo");
+        } catch (error) {
+          console.warn("⚠️ No se pudo eliminar el archivo", error);
         }
       }
       await FirestoreService.delete("press", id);
@@ -606,7 +606,7 @@ const PressManagement: FC = () => {
   };
 
   const handleLoadMore = () => {
-    fetchPressItems(currentPage + 1, true);
+    fetchPressItems(true);
   };
 
   const handleMediaClick = (item: PressItem) => {
@@ -721,6 +721,7 @@ const PressManagement: FC = () => {
                 Carga en Lote
               </h2>
               <button
+                aria-label="button"
                 onClick={resetBulkForm}
                 className="text-gray-400 hover:text-white transition-colors"
               >
@@ -827,6 +828,7 @@ const PressManagement: FC = () => {
                           <button
                             onClick={() => handleRemoveBulkFile(index)}
                             className="text-red-400 hover:text-red-600 transition-colors ml-2 flex-shrink-0"
+                            aria-label="delete file"
                           >
                             <FaTrash size={16} />
                           </button>
@@ -1392,6 +1394,7 @@ const PressManagement: FC = () => {
           >
             <div className="bg-glass rounded-lg overflow-hidden max-h-[90vh] flex flex-col relative">
               <button
+                aria-label="close"
                 onClick={handleCloseModal}
                 className="absolute top-4 right-4 z-10 p-2"
               >
