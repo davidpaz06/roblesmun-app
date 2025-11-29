@@ -63,7 +63,6 @@ const RegistrationsManagement: FC = () => {
   const [rateInput, setRateInput] = useState<string>("");
   const [rateLoading, setRateLoading] = useState<boolean>(false);
 
-  // Nuevo estado para control de inscripciones
   const [registrationsOpen, setRegistrationsOpen] = useState<boolean>(false);
   const [isTogglingRegistrations, setIsTogglingRegistrations] =
     useState<boolean>(false);
