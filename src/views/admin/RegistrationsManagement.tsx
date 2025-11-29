@@ -11,6 +11,8 @@ import {
   FaUser,
   FaDollarSign,
   FaClipboardList,
+  FaLock,
+  FaLockOpen,
 } from "react-icons/fa";
 import { CiImport } from "react-icons/ci";
 import Loader from "../../components/Loader";
@@ -60,6 +62,11 @@ const RegistrationsManagement: FC = () => {
   const [rate, setRate] = useState<number>(0);
   const [rateInput, setRateInput] = useState<string>("");
   const [rateLoading, setRateLoading] = useState<boolean>(false);
+
+  // Nuevo estado para control de inscripciones
+  const [registrationsOpen, setRegistrationsOpen] = useState<boolean>(false);
+  const [isTogglingRegistrations, setIsTogglingRegistrations] =
+    useState<boolean>(false);
 
   const fetchRegistrations = async () => {
     setIsLoading(true);
@@ -258,6 +265,22 @@ const RegistrationsManagement: FC = () => {
     fetchRate();
   }, []);
 
+  // Leer estado de inscripciones al montar
+  useEffect(() => {
+    const fetchRegistrationsStatus = async () => {
+      try {
+        const config = await FirestoreService.getById<{
+          registrationsOpen: boolean;
+        }>("config", "registration");
+        setRegistrationsOpen(config?.registrationsOpen ?? false);
+      } catch (e) {
+        console.error("Error fetching registrations status:", e);
+        setRegistrationsOpen(false);
+      }
+    };
+    fetchRegistrationsStatus();
+  }, []);
+
   const sortOptions: Array<{
     value: SortOption;
     label: string;
@@ -312,6 +335,32 @@ const RegistrationsManagement: FC = () => {
       console.log(e);
     } finally {
       setRateLoading(false);
+    }
+  };
+
+  // Función para alternar estado de inscripciones
+  const handleToggleRegistrations = async () => {
+    const newState = !registrationsOpen;
+    const confirmMessage = newState
+      ? "¿Estás seguro de que deseas ABRIR las inscripciones? Los usuarios podrán inscribirse."
+      : "¿Estás seguro de que deseas CERRAR las inscripciones? Los usuarios NO podrán inscribirse.";
+
+    if (!window.confirm(confirmMessage)) return;
+
+    setIsTogglingRegistrations(true);
+    try {
+      await FirestoreService.set("config", "registration", {
+        registrationsOpen: newState,
+        rate: rate, // Mantener la tasa actual
+        updatedAt: new Date().toISOString(),
+      });
+      setRegistrationsOpen(newState);
+      alert(`Inscripciones ${newState ? "ABIERTAS" : "CERRADAS"} exitosamente`);
+    } catch (error) {
+      console.error("Error toggling registrations:", error);
+      alert("Error al cambiar el estado de las inscripciones");
+    } finally {
+      setIsTogglingRegistrations(false);
     }
   };
 
@@ -393,33 +442,96 @@ const RegistrationsManagement: FC = () => {
 
       {isLoading && <Loader message="Cargando inscripciones..." />}
 
-      <div className="my-8 bg-glass p-6 rounded-lg max-w-md mx-auto">
-        <h2 className="text-xl font-montserrat-bold mb-4">
-          Tasa de cambio actual
-        </h2>
-        <form onSubmit={handleRateUpdate} className="flex gap-4 items-center">
-          <input
-            type="number"
-            aria-label="Tasa de cambio en Bs/USD"
-            step="0.01"
-            min="0"
-            value={rateInput}
-            onChange={(e) => setRateInput(e.target.value)}
-            className="w-32 p-2 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none"
-            disabled={rateLoading}
-          />
+      {/* CONTROL DE INSCRIPCIONES */}
+      <div className="my-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Control de apertura/cierre */}
+        <div className="bg-glass p-6 rounded-lg border-2 border-blue-600">
+          <h2 className="text-xl font-montserrat-bold mb-4 flex items-center gap-2">
+            {registrationsOpen ? (
+              <FaLockOpen className="text-green-400" />
+            ) : (
+              <FaLock className="text-red-400" />
+            )}
+            Estado de Inscripciones
+          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Estado actual:</p>
+              <p
+                className={`text-lg font-montserrat-bold ${
+                  registrationsOpen ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {registrationsOpen ? "ABIERTAS" : "CERRADAS"}
+              </p>
+            </div>
+            <div
+              className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                registrationsOpen
+                  ? "bg-green-900/20 border-2 border-green-600"
+                  : "bg-red-900/20 border-2 border-red-600"
+              }`}
+            >
+              {registrationsOpen ? (
+                <FaLockOpen className="text-green-400 text-2xl" />
+              ) : (
+                <FaLock className="text-red-400 text-2xl" />
+              )}
+            </div>
+          </div>
           <button
-            type="submit"
-            className="bg-[#d53137] text-white px-4 py-2 rounded-lg hover:bg-[#b71c1c] transition-colors"
-            disabled={rateLoading}
+            onClick={handleToggleRegistrations}
+            disabled={isTogglingRegistrations}
+            className={`w-full py-3 rounded-lg font-montserrat-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              registrationsOpen
+                ? "bg-red-600 hover:bg-red-700 text-white"
+                : "bg-green-600 hover:bg-green-700 text-white"
+            }`}
           >
-            {rateLoading ? "Guardando..." : "Actualizar"}
+            {isTogglingRegistrations
+              ? "Procesando..."
+              : registrationsOpen
+              ? "Cerrar Inscripciones"
+              : "Abrir Inscripciones"}
           </button>
-        </form>
-        <p className="text-gray-400 mt-2 text-sm">
-          Tasa actual: <span className="font-montserrat-bold">{rate}</span>{" "}
-          Bs/USD
-        </p>
+          <p className="text-xs text-gray-400 mt-3">
+            {registrationsOpen
+              ? "Al cerrar, los usuarios no podrán inscribirse hasta que las vuelvas a abrir."
+              : "Al abrir, los usuarios podrán realizar sus inscripciones (si hay cupos disponibles)."}{" "}
+          </p>
+        </div>
+
+        {/* Tasa de cambio */}
+        <div className="bg-glass p-6 rounded-lg">
+          <h2 className="text-xl font-montserrat-bold mb-4">Tasa de cambio</h2>
+          <form onSubmit={handleRateUpdate} className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">
+                Tasa actual:{" "}
+                <span className="font-montserrat-bold text-white">{rate}</span>{" "}
+                Bs/USD
+              </label>
+              <input
+                type="number"
+                aria-label="Tasa de cambio en Bs/USD"
+                step="0.01"
+                min="0"
+                value={rateInput}
+                onChange={(e) => setRateInput(e.target.value)}
+                className="w-full p-3 bg-[#101010] border border-gray-600 rounded-lg text-[#f0f0f0] focus:border-[#d53137] outline-none"
+                disabled={rateLoading}
+                placeholder="Ingresa nueva tasa"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-[#d53137] text-white py-3 rounded-lg hover:bg-[#b71c1c] transition-colors font-montserrat-bold disabled:opacity-50"
+              disabled={rateLoading}
+            >
+              {rateLoading ? "Guardando..." : "Actualizar Tasa"}
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Registrations Grid */}

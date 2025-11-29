@@ -51,6 +51,34 @@ const RegistrationsView: FC = () => {
   const [committeesError, setCommitteesError] = useState<string>("");
   const [availableSeatsCount, setAvailableSeatsCount] = useState<number>(0);
 
+  // ✅ Nuevo estado para control manual de inscripciones
+  const [registrationsOpen, setRegistrationsOpen] = useState<boolean>(false);
+  const [isLoadingRegistrationsStatus, setIsLoadingRegistrationsStatus] =
+    useState<boolean>(true);
+
+  // ✅ Función para verificar si las inscripciones están abiertas
+  const fetchRegistrationsStatus = async () => {
+    setIsLoadingRegistrationsStatus(true);
+    try {
+      console.log("🔄 Verificando estado de inscripciones...");
+      const config = await FirestoreService.getById<{
+        registrationsOpen: boolean;
+      }>("config", "registration");
+
+      const isOpen = config?.registrationsOpen ?? false;
+      setRegistrationsOpen(isOpen);
+      console.log(
+        "✅ Estado de inscripciones:",
+        isOpen ? "Abiertas" : "Cerradas"
+      );
+    } catch (error) {
+      console.error("❌ Error verificando estado de inscripciones:", error);
+      setRegistrationsOpen(false);
+    } finally {
+      setIsLoadingRegistrationsStatus(false);
+    }
+  };
+
   const fetchCommittees = async () => {
     setIsLoadingCommittees(true);
     setCommitteesError("");
@@ -88,15 +116,20 @@ const RegistrationsView: FC = () => {
   };
 
   useEffect(() => {
+    fetchRegistrationsStatus();
     fetchCommittees();
   }, []);
 
+  // ✅ Nueva lógica: las inscripciones están disponibles SI están abiertas manualmente
   const areRegistrationsAvailable = () => {
-    return committees.length > 0 && availableSeatsCount > 0;
+    return (
+      registrationsOpen && committees.length > 0 && availableSeatsCount > 0
+    );
   };
 
   const RegistrationStatusButton = () => {
-    if (isLoadingCommittees) {
+    // ✅ Mostrar loader mientras se verifica
+    if (isLoadingCommittees || isLoadingRegistrationsStatus) {
       return (
         <div className="px-10 py-4 bg-glass font-montserrat-bold rounded-xl shadow-lg text-center flex items-center gap-3">
           <Loader message="" />
@@ -115,7 +148,10 @@ const RegistrationsView: FC = () => {
             </span>
           </div>
           <button
-            onClick={fetchCommittees}
+            onClick={() => {
+              fetchCommittees();
+              fetchRegistrationsStatus();
+            }}
             className="text-sm underline text-red-200 hover:no-underline"
           >
             Reintentar
@@ -132,6 +168,23 @@ const RegistrationsView: FC = () => {
         >
           Inicia sesión para inscribirse
         </Link>
+      );
+    }
+
+    // ✅ Nueva lógica: verificar si están cerradas manualmente
+    if (!registrationsOpen) {
+      return (
+        <div className="w-full mt-4 p-4 bg-blue-900/20 border border-blue-600 rounded-lg">
+          <h3 className="text-blue-300 font-montserrat-bold mb-2 flex items-center gap-2">
+            <FaClock />
+            Inscripciones cerradas temporalmente
+          </h3>
+          <p className="text-sm text-blue-200 font-montserrat-light">
+            Las inscripciones están cerradas en este momento. Nuestro equipo
+            está preparando todo para la próxima apertura. Te notificaremos
+            cuando estén disponibles nuevamente.
+          </p>
+        </div>
       );
     }
 
@@ -208,7 +261,9 @@ const RegistrationsView: FC = () => {
               <div
                 key={idx}
                 className={`bg-glass rounded-xl shadow-lg p-6 flex flex-col items-center justify-center transition-transform duration-300 hover:scale-105 ${
-                  !areRegistrationsAvailable() && !isLoadingCommittees
+                  !areRegistrationsAvailable() &&
+                  !isLoadingCommittees &&
+                  !isLoadingRegistrationsStatus
                     ? "opacity-60"
                     : ""
                 }`}
